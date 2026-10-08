@@ -1,0 +1,1797 @@
+{
+ "name": "wf_ca9eae09-aa7",
+ "areas": [
+  {
+   "area_key": "phrases",
+   "area": "Interaction de calage par mots et par phrases (Caler avec des mots, maquette Caler par phrases, anchors.py)",
+   "summary": "L'état honnête : « Caler avec des mots » est un outil réécrit trois fois en trois jours autour d'un moteur (tools/anchors.py bend_words) qui n'a jamais été écouté par un humain, dont le garde-fou « jamais pire » ne peut pas se déclencher, et dont le seuil FAR_S = 0,75 s ne distingue même pas le premier mot que Léo a posé sur le Verdi (+0,57 s, calage perdu) d'un mot juste de Loch (0,59 s, calage bon). Le texte de l'interface et le LEXIQUE décrivent encore la règle du 7 octobre (« chaque mot déplace seulement sa note ») alors que depuis le 8 un mot « loin » emporte toute la suite jusqu'au prochain silence, mot ou fin. La seule interaction que Léo sait faire (« d'ici jusque-là, c'est cette phrase ») n'existe que comme maquette : elle n'a pas de modèle de données (une phrase posée ne connaît ni sa première note, ni sa dernière, ni sa voix ; le « bar » exporté est celui du segment, faux pour les 2e et 3e phrases d'un même segment), aucun code ne relie des bords de phrase à la carte, et la variante 3 repose sur une proposition fabriquée par une expérience hors zip, découpée au nombre de caractères. anchors.py traîne trois générations de moteurs (pin, soft_pin/snap_taps, bend_local/local_merge) dont une seule est vivante, avec une docstring qui décrit le chemin mort ; reperes.js garde ~800 lignes d'ancien panneau derrière un drapeau. Les tests (17 contrôles sur un jouet uniforme, 82 contrôles de formatage de libellés) prouvent que le code est d'accord avec lui-même, pas que le calage s'améliore. Ce qui mérite d'être gardé est précis : la logique « les silences absorbent, les notes gardent leur durée », la question « l'enregistrement s'arrête avant cette phrase ? », le principe de la variante 1 (un geste, pas de partition à l'écran), et recaler.py qui est déjà le bon moteur pour « entre deux bords » mais n'est branché sur rien. À 18 jours de la bêta, le bon choix est de retirer « Caler avec des mots » de la surface client, de construire la variante 1 + retouche des blocs (variante 2) sur un modèle {voix, qDébut, qFin, t0, t1}, et de piloter recaler.py entre les bords.",
+   "good": [
+    {
+     "what": "La règle physique de bend_words pour un mot loin : les notes chantées gardent leur durée, ce sont les silences (respirations, attentes) qui absorbent le décalage, chacun gardant au moins 40 % de sa longueur. C'est la bonne intuition sur ce que fait un chanteur ; à garder comme règle pour l'intérieur d'une phrase.",
+     "evidence": "code/tools/anchors.py:494-511 (sung_silences) et :557-571",
+     "tag": "verified"
+    },
+    {
+     "what": "La maquette pose la seule question que personne d'autre dans le projet ne pose : « L'enregistrement s'arrête avant « … » ? Il reste N phrases sans place » (offFrom), et les phrases absentes sortent du compte. C'est exactement la cause de l'échec du Verdi (mesures 255-308 casées entre 11:18 et 12:52).",
+     "evidence": "code/app/maquettes/caler-phrases/caler-phrases.js:24, :345-352, :366-368 ; rapports/caler-phrases-2026-10-08/RESULTATS.md:28-31",
+     "tag": "verified"
+    },
+    {
+     "what": "Le principe de la variante 1 « Au fil de l'écoute » : la phrase en grand, une seule touche, pas de mesures ni de notes à l'écran, « Oups 5 s en arrière », vitesse 75 %, et « tenir Espace = la fin aussi » qui capture t1 sans geste supplémentaire. C'est le seul écran du projet qui parle la langue de Léo.",
+     "evidence": "code/app/maquettes/caler-phrases/index.html:31-46 ; caler-phrases.js:66-91 ; image 14",
+     "tag": "verified"
+    },
+    {
+     "what": "recaler.py est déjà le bon squelette pour « recaler entre deux bords » : programme dynamique sur des nœuds, ancres dures à ±40 ms, confiance par mesure par min-marginales, et un « extend » qui suit le décalage jusqu'à la prochaine mesure sûre. Il n'est juste pas relié aux phrases.",
+     "evidence": "code/tools/recaler.py:14-24, :48 (ANCHOR_TOL = 0.04), :170-173 (solve), :439 (want_marg), :501-516 (far_anchor)",
+     "tag": "verified"
+    },
+    {
+     "what": "Le diagnostic du bug du 8 octobre a été fait en rejouant le vrai calage de Léo depuis l'historique, sans rien écrire : c'est la bonne méthode, et elle est rare dans ce projet.",
+     "evidence": "rapports/caler-phrases-2026-10-08/RESULTATS.md:5-12 ; code/tools/anchors.py:732-742 (copie en history avant écriture)",
+     "tag": "verified"
+    },
+    {
+     "what": "check_words refuse en français, avant tout calcul, des mots qui ne correspondent plus à la partition (voix disparue, mesures changées, plus de note là). Sobre et utile.",
+     "evidence": "code/tools/anchors.py:383-419 ; tests/anchors_words_test.py:66-75",
+     "tag": "verified"
+    }
+   ],
+   "answers": [
+    {
+     "question": "Quelle variante de « Caler par phrases », ou quoi d'autre ?",
+     "answer": "Variante 1 (« Au fil de l'écoute ») comme capture, avec le « tenir Espace = la fin aussi » activé par défaut, puis la bande de la variante 2 uniquement comme retouche (tirer un bord, écouter) sur le même écran ; pas de variante 3 pour la bêta. Raisons : la 1 est le seul geste qu'un débutant fait sans comprendre un écran (image 14), elle produit t0 et, avec la touche tenue, t1 ; la 2 seule est trop lente (choisir, glisser, écouter pour 20 phrases) et demande de lire une forme d'onde ; la 3 transforme l'utilisateur en vérificateur d'une devinette qui, sur un calage perdu comme le Verdi, est fausse là où ça compte (build.py:84-105 ; RESULTATS.md:62). L'auteur classe 1 puis 3 (RESULTATS.md:65-68) ; je classe 1 puis 2, et 3 seulement quand une confiance par phrase existera. Le « quoi d'autre » qui manque : (a) la liste des phrases doit venir d'un texte collé par l'utilisateur découpé à la ponctuation et aux silences de la voix (comme phrases.py:34-48), pas des paroles OMR ; (b) un modèle de données {voice, qStart, qEnd, t0, t1} ; (c) un moteur qui n'existe pas encore (voir réponse suivante). [verified] pour la maquette, [inferred] pour le classement."
+    },
+    {
+     "question": "Comment les bords de phrase doivent-ils piloter la carte au niveau des mesures ?",
+     "answer": "Chaque phrase posée donne deux ancres dures : (qStart → t0) et (qEnd → t1), qStart = q de la première note chantée de la phrase dans cette voix, qEnd = q + len de sa dernière note. On trie les ancres (monotonie obligatoire ; une phrase dans le désordre est refusée à la pose). Trois régimes : (1) à l'intérieur d'une phrase, la carte est l'ancienne carte remise à l'échelle affinement entre les deux bords (en v1 : tempo constant dans la phrase, erreur bornée par la variation de tempo × 5-15 s) ; puis note_align.py replace les notes de ma voix dans [t0, t1] (il a déjà des priors « ±0,25 s autour du calage de mesure », docstring :13) ; (2) entre t1(i) et t0(i+1) (silence de la voix, orchestre, interlude), on appelle recaler.analyse sur cette tranche avec les deux bords comme ancres dures à ±40 ms (recaler.py:48, :251-252) : il utilise chroma, attaques, temps, et renvoie une confiance par mesure ; repli si l'évidence est faible : linéaire et confiance basse, mesures dessinées « devinées » ; (3) avant la première phrase et après la dernière : extrapolation au dernier tempo connu, bornée au début de l'enregistrement ; après la dernière phrase posée ou marquée absente, t = null (jamais une compression). La dérive entre ancres (17 % des catastrophes) est bornée par la longueur de phrase ; les points d'orgue sont captés parce qu'ils tombent aux fins de phrase (d'où l'importance de t1, pas seulement t0) ; une rentrée du chœur est un début de phrase. La confiance à montrer : par phrase (ratio durée réelle / durée écrite comparé aux voisines ; « cette phrase semble trop longue, réécoute »), jamais 1,0 par construction comme bar_confidence aujourd'hui (anchors.py:251-256). [verified] pour les briques existantes, [inferred] pour l'assemblage."
+    },
+    {
+     "question": "L'interaction mot par mot est-elle seulement possible quand les paroles lues sont du bruit (Verdi) ?",
+     "answer": "Non. Le clic cible la syllabe imprimée (reperes.js:1364-1378), les suggestions classent par texte (anchors.py:872-886, reperes-core.js:82-91), la puce affiche la syllabe : avec « Mïngiunsc » l'utilisateur ne reconnaît rien, le mot proposé par cwStart est inventé, et l'association syllabe→note est elle-même suspecte (1 019 syllabes sur 5 lignes avant réparation ; V2 avec 13 syllabes après [fait établi]). Le rapport l'admet en une ligne (RESULTATS.md:32-33) et la maquette a dû taper le livret à la main (build.py:13-39). Ce qui survit : cliquer une NOTE au lieu d'un mot, mais c'est précisément le niveau que Léo ne sait pas faire. Le niveau phrase avec texte collé contourne entièrement l'OMR des paroles : seuls comptent le nombre de syllabes par phrase (approximatif suffit) et les silences de la voix dans la partition lue, qui sont bien plus fiables que les syllabes. [verified]"
+    },
+    {
+     "question": "Quelle est la donnée minimale d'une ancre de phrase (début, fin, première note, dernière note) ?",
+     "answer": "{voice (clé de la voix, ex. 'V1'), qStart (q de la première note chantée de la phrase), qEnd (q + len de la dernière note), t0 (s), t1 (s, obligatoire pour les points d'orgue et les fins ; capturé par « tenir Espace » ou, à défaut, pris sur la fin du run voisé fcpe le plus proche et marqué 'deviné'), by ('toi' | 'pupitre'), checked (bool), absent (bool), text (affichage seulement)}. Les numéros de mesure sont dérivés, jamais la clé (anchors.py:9-12 explique déjà le piège index/numéro imprimé). Aujourd'hui la maquette n'a ni voice, ni qStart, ni qEnd, et son 'bar' est faux pour les phrases 2 et 3 d'un segment (build.py:46, :106 ; caler-phrases.js:411). [verified]"
+    },
+    {
+     "question": "Comment transformer N ancres de phrase en carte linéaire par morceaux, et que se passe-t-il entre les ancres (dérive de tempo) ?",
+     "answer": "Construire la liste triée des 2N points (qStart_i, t0_i), (qEnd_i, t1_i) ; vérifier la monotonie ; la carte est np.interp sur ces points pour q dans [qStart_i, qEnd_i] (l'ancienne carte remise à l'échelle si l'on veut garder sa forme interne : t(q) = t0 + (t1−t0) × (old(q)−old(qStart)) / (old(qEnd)−old(qStart))). Entre qEnd_i et qStart_{i+1} : ne PAS interpoler aveuglément si la tranche contient plus de 2 mesures ; appeler recaler.analyse(ctx, k_first, k_last) avec les deux bords comme ancres (c'est exactement son contrat :251-252) et prendre ses temps et sa confiance ; repli linéaire sinon. La dérive entre ancres est alors bornée : une phrase de 10 s avec un tempo qui varie de 5 % fait 0,5 s d'erreur maximale au milieu si l'on reste linéaire, ce qui est pire que les 100 ms visés mais bien mieux que les 1-2 s du Verdi ; note_align.py à l'intérieur de [t0, t1] ramène les notes de la voix sur la hauteur chantée. Pour le pré-calage, les t de la carte automatique restent le prior de recaler.py (il a déjà « une traction douce vers la barre actuelle, aussi forte que la confiance automatique », recaler.py:429-433). [inferred] : aucun code ne fait cela aujourd'hui."
+    },
+    {
+     "question": "Quelles classes d'échec du jeu de vérité chaque variante corrige-t-elle ?",
+     "answer": "Classes (calage-verite RESULTATS.md:28-35) : rentrée du chœur après solistes 34 %, point d'orgue / tempo libre 20 %, dérive 17 %, fin de pièce 14 %, accords courts entre silences 6 %, ligne chantée par un soliste 6 %. Variante 1 (débuts seuls) : rentrées oui (un tap par rentrée), dérive oui mais bornée à la phrase, fins non (sauf « tenir Espace »), points d'orgue en milieu de phrase non. Variante 1 + fin tenue, ou variante 2 (début et fin) : rentrées, fins et points d'orgue aux bords de phrase oui ; dérive bornée ; point d'orgue au milieu d'une phrase non (ça reste note par note : « X = la jonction ici » existe déjà). Variante 3 : ne corrige par elle-même aucune classe ; elle corrige ce que la proposition avait déjà juste, c'est une interface de vérification. Aucune variante ne traite les accords courts (« non, non, non ») ni la ligne reprise par un soliste : c'est le Calage note par note. À noter : l'ancre automatique de rentrée (entry_anchor.py, recette D) est désactivée dès qu'il y a des repères utilisateur (pipeline.py:451), donc poser des phrases éteint le seul automatisme qui visait la classe 1. [verified] pour les classes et le code, [inferred] pour la couverture."
+    },
+    {
+     "question": "Quelle variante un débutant finirait-il en 10 minutes pour une pièce de 4 minutes ?",
+     "answer": "Une pièce de 4 minutes fait 15-25 phrases chantées. Variante 1 : 4 min d'écoute en temps réel (5,3 min à 75 %) + 1-2 « Oups » de 5 s + 2 min de retouche = 6-8 min : oui, à condition que « Oups » et « je ne l'entends pas » restent les seuls autres gestes. Variante 2 : par phrase, choisir dans la liste, trouver sur la bande, glisser, écouter = 20-30 s, soit 7-12 min pour 20 phrases, et il faut comprendre une forme d'onde : limite, et pas pour un débutant seul. Variante 3 : si 75 % des blocs sont justes, 20 × (écouter 5 s + Entrée) + 5 × 30 s ≈ 4-5 min ; si la moitié est fausse (cas Verdi), 8-10 min et un utilisateur découragé qui ne sait plus à quoi se fier. Le chiffre réel n'est mesuré nulle part : le seul contrôle est headless avec une horloge à la place du son (check.mjs:53-56). Le 12:53 du Verdi avec 49 phrases demande au minimum 13 min d'écoute : hors des 10 minutes quoi qu'il arrive, ce qui plaide pour ne poser que les débuts de section (rentrées après ≥ 1 mesure de silence) et laisser le moteur remplir. [inferred]"
+    },
+    {
+     "question": "Le seuil FAR_S est-il un design ou un patch ?",
+     "answer": "Un patch. Un scalaire posé entre deux cas qui se chevauchent (Loch juste jusqu'à 0,59 s, Verdi perdu à 0,57 s : anchors.py:499, RESULTATS.md:23-24), un comportement discontinu au seuil (:553-554), aucun test sur données réelles (fixture jouet uniforme), pas d'écoute, le texte de l'UI non mis à jour (reperes.js:1557, LEXIQUE.md:49), et la cause de fond intacte : hors du mot, le moteur continue de faire confiance à une carte dont on sait qu'elle est perdue. Par trace, la séquence réelle de Léo (près, loin, près) ramène tout ce qui suit le troisième mot sur l'ancien calage faux. Un design dirait : la confiance est une propriété de région (bords de phrase posés, ou contraste de confidence.py), pas la distance d'un tap. [verified] pour le code, [inferred] pour la trace."
+    },
+    {
+     "question": "Faut-il supprimer « Caler avec des mots » ?",
+     "answer": "De la surface client, oui, avant la bêta : retirer les entrées (Options › Outils, le bouton après un nouvel enregistrement app.js:3951, la bulle des bandes ambrées reperes.js:121, le point dans Mon classeur), la branche far (anchors.py:557-583), l'ancien panneau (~800 lignes derrière OLD_PANEL) et le moteur de suggestions (anchors.py:806-948, dépendant des paroles OMR). Garder une seule chose : la règle « près » de bend_words (un mot déplace sa note, la note d'avant absorbe) comme geste de retouche d'UNE note à l'intérieur d'une phrase déjà posée, où elle a été mesurée (Loch, 40 notes) et où son effet est borné par les bords. Pourquoi : trois réécritures en trois jours avec deux règles contradictoires, un garde-fou mort, pas d'écoute humaine, une dépendance aux paroles lues que la chaîne ne fournit pas, et Léo qui décrit lui-même des phrases, pas des mots. Le code reste dans git ; rien n'est perdu sauf du temps à le maintenir. [verified] pour les faits, [inferred] pour la recommandation."
+    }
+   ],
+   "not_read": [
+    "code/app/maquettes/caler-phrases/style.css (164 lignes) : non lu, pas de logique dedans.",
+    "code/app/maquettes/caler-phrases/data.js : absent du zip (03-INVENTAIRE.md:93) ; la maquette ne tourne pas sans lui.",
+    "code/tools/tests/fixtures/loch_words/ (data.json, sync_before.json, case.json) : absents du zip (03-INVENTAIRE.md:76) ; les chiffres Loch de anchors_words_test.py sont invérifiables.",
+    "code/tools/tests/fixtures/calage_bench.json et calage_truth_frozen.json : absents (03-INVENTAIRE.md:79).",
+    "rapports/caler-phrases-2026-10-08/01-03 *.png : absents ; seules les copies images/14-16 (jpg réduits) ont été regardées.",
+    "code/app/reperes.css (302 lignes) : non lu.",
+    "code/tools/recaler.py : lu en entier pour le docstring, solve() et les ancres (:170-190, :406-454) ; le corps de analyse() et load_ctx() seulement survolé.",
+    "code/tools/align3.py et fusion.py : seulement les lignes sur les ancres (grep) ; l'algorithme de gdtw et la fusion Huber non relus.",
+    "code/tools/note_align.py et confidence.py : docstrings seulement.",
+    "code/tools/entry_anchor.py : les 30 premières lignes.",
+    "code/app/app.js : seulement store (:62-75), setSure/pushLocked (:6494-6510), le bouton « Corriger le calage » (:3951) et les hooks de modules ; api.calage.keep/restore/reload non lus.",
+    "code/app/reperes.js lignes 1180-1189 et le corps de drawScoreLayer pour l'ancien panneau : survolés.",
+    "code/claude/HANDOFF.md : seulement les lignes trouvées par grep (181-201, 436-448, 515, 560) ; les 567 lignes n'ont pas été lues en entier.",
+    "Les réponses de Léo dans Loupe (PUP-R94, R98) : hors zip.",
+    "Aucun script du zip n'a été exécuté (règle) ; les traces de bend_words sont faites à la main sur le code, d'où les tags [inferred]."
+   ],
+   "need_to_go_further": [
+    "Le sync d'avant 13:33 du Verdi (Pupitre-data/calage/history/…20261008-1333….sync.json), les 3 mots envoyés (reperes.pending dans localStorage de Léo) et fcpe.npy de a1f47e4a26c5b146 : pour rejouer bend_words sur le cas réel et mesurer l'écart aux départs voisés avant/après, sans écouter.",
+    "L'enregistrement Freni/Sinopoli (12:53) et 20 minutes de Léo chronométré sur la variante 1 avec le vrai son : la seule mesure qui compte pour choisir une variante (temps total, écart tap−départ chanté sur 10 phrases, à 100 % et 75 %).",
+    "Deux choristes qui ne sont pas Léo sur le même test : personne d'autre n'a jamais posé un mot ou une phrase dans Pupitre.",
+    "Les fixtures loch_words et calage_bench.json : pour trancher 0,115/4 contre 0,134/7 et pour mesurer un prototype de phrase_map sur les 12 pièces du jeu de vérité (les classes rentrée / point d'orgue / fin y sont déjà étiquetées, work/passages.json).",
+    "Le fichier anchors.json de l'expérience « lecture parfaite » (139 repères) : pour savoir ce que vaut vraiment la proposition de la variante 3.",
+    "Un run de recaler.py avec deux ancres de phrase comme seules contraintes sur une tranche du Verdi (orchestre entre deux phrases) : pour confirmer qu'il est utilisable tel quel comme moteur « entre les bords » et mesurer son temps de calcul par tranche.",
+    "Un poste Windows : nice (anchors.py:694, :773) et node (:87) sont appelés par le chemin du recalage ; rien de cette zone n'a tourné hors du Mac de Léo."
+   ]
+  },
+  {
+   "area_key": "calage",
+   "area": "Calage (alignement partition / enregistrement) et son signal de confiance",
+   "summary": "Le calage automatique (align3 → beats → fusion → bar_regular) ne peut pas, par construction, dire « la partition continue après la fin de l'enregistrement » : la recherche de chemin d'align3 doit atteindre la dernière frame de partition à la dernière frame d'audio et ne peut sauter que des frames où les voix se taisent ; le Verdi n'est donc pas un accident mais le comportement nominal. Le « contrôle mesure par mesure » compare la carte fusionnée à deux cartes qui partagent la même hypothèse et dont elle dérive (prior align3, temps battus capés à 0,2 s d'align3) : il ne peut pas voir une panne globale. L'outil de confiance local (confidence.py) est éteint par défaut, sa docstring décrit un autre algorithme que son code, et aucun job lancé par l'app ne l'active. Le mot « calé » affiché à l'utilisateur ne vient d'aucune mesure : « Ton enregistrement … est calé. » s'affiche dès que le job est fini, et « Bien calé » / « Calé, quelques endroits à revoir » ne sont que la retranscription des trois oui/non de l'utilisateur sur trois fenêtres de 15 s. Le seul chiffre montré (within50) est auto-sélectif : il ne compte que les notes dont la hauteur correspond déjà à l'endroit prédit, ce que calage_truth.py reconnaît lui-même (« Caruso 100 % while 28 of 29 bars > 1 s off »), et il pilote pourtant la recommandation « garder le nouveau ». Il existe cinq notions de « confiance » incompatibles (agreement, check.doubtful, barConfidence, confidence, bar_cost, plus les barres rouges calculées dans le navigateur), dont deux ne sont lues par personne et une (sync.confidence) est lue par recaler.py mais jamais écrite par le pipeline. Le banc « officiel » du 7 oct mesure surtout l'accord de la machine avec elle-même (la vérité d'une note non corrigée est la carte machine sur disque), sur 11 pistes d'exercice ténor Chord Perfect + 1 Loch ; rien ne couvre un soliste, un piano réel, une autre voix ou un enregistrement plus court que la partition. Le pipeline ne refuse jamais pour cause de qualité. À garder : la règle figée de calage_truth.py (mesures déplacées vs non touchées, intervalles bootstrap), le test Tier A sans vérité, la discipline « recette écrite avant de mesurer », la garde anti-panne du banc, l'historique jamais écrasé.",
+   "good": [
+    {
+     "what": "calage_truth.py (26 sept) sépare les mesures que Léo a vraiment déplacées des mesures « untouched » (= accord avec un ancien calage machine) et donne des comptes avec intervalle bootstrap, pas seulement des pourcentages.",
+     "evidence": "code/tools/tests/calage_truth.py:8-14, :19-28, :186-198, :244-250",
+     "tag": "verified"
+    },
+    {
+     "what": "Tier A (calage_warp.py) : un test sans vérité humaine, qui déforme un enregistrement de façon connue (intro, point d'orgue, tempo, coupe, fin) et vérifie que le calage suit. C'est la bonne idée pour tester des cas que Léo ne calera jamais à la main.",
+     "evidence": "code/tools/tests/calage_warp.py:1-14 ; rapport rapports/calage-v3-2026-09-26.md:42-46, :67-77",
+     "tag": "verified"
+    },
+    {
+     "what": "La discipline « recette figée AVANT de mesurer » avec entraînement / contrôle à l'aveugle et journal des regards sur le contrôle.",
+     "evidence": "rapports/calage-verite-2026-10-07/RECETTE-AB.md:1-6, :34-35 ; code/tools/bench_calage.py:12-17, :383-386",
+     "tag": "verified"
+    },
+    {
+     "what": "La garde du banc : un run dont une étape a échoué n'est pas compté (après 4 jours de basic-pitch en panne silencieuse).",
+     "evidence": "code/tools/bench_calage.py:224-235 ; code/tools/pipeline.py:226-234 ; code/tools/tests/bench_garde_test.py:1-5",
+     "tag": "verified"
+    },
+    {
+     "what": "Le modèle de chemin d'align3 (gaps audio sans partition, skips de partition sans chant, plans reprises/x2/x3, transposition) est une vraie idée d'aligneur « structurel », bien plus que du DTW nu.",
+     "evidence": "code/tools/align3.py:1-17, :299-305, :547-561, :612-615",
+     "tag": "verified"
+    },
+    {
+     "what": "« Pas de voix » : une mesure où personne ne chante n'est jamais « douteuse ». Règle simple et juste, appliquée partout.",
+     "evidence": "code/tools/pipeline.py:1072-1081 ; code/app/app.js:4826-4842 ; code/app/reperes.js:71-72, :122",
+     "tag": "verified"
+    },
+    {
+     "what": "Rien n'est écrasé : un calage accepté ou recalé envoie l'ancien dans calage/history avec un nom unique.",
+     "evidence": "code/tools/serve.py:621-632 ; code/tools/anchors.py:732-742",
+     "tag": "verified"
+    },
+    {
+     "what": "Le principe « Voilà ce que j'ai compris » (écouter trois extraits avec sa ligne au piano par-dessus) est la bonne forme de contrôle pour quelqu'un qui entend des phrases, pas des mesures ; c'est son contenu (quels extraits, quel mot affiché) qui est faux, pas l'idée.",
+     "evidence": "code/app/library.js:1500-1558",
+     "tag": "verified"
+    }
+   ],
+   "answers": [
+    {
+     "question": "Trace : comment le mot de statut montré à l'utilisateur est-il calculé, de confidence.py à library.js en passant par l'API ?",
+     "answer": "Il n'y a PAS de chemin de confidence.py au statut. (1) confidence.scan n'est appelé que si spec.shift_scan est vrai (pipeline.py:829-832) ; SHIFT_SCAN=False (pipeline.py:112) et les specs créés par serve.py (/api/job :585-586, /api/upload :607-608) ne le posent jamais. (2) pipeline.check (812-858) écrit check.doubtful/sections à partir de |fused − align3| et |fused − second| > 0,3 s ; ces sections ne servent qu'aux bandes ambre de reperes.js (computeWarnings :56-73, lecture via api.calage.check app.js:8419) et à élargir la fenêtre des suggestions de mots (anchors.py:938-943). (3) pipeline.main met status 'done' (980) quelle que soit la qualité et result.after.within50 (916). (4) api_library.progress (474-535) renvoie status, phases, et result.within50 si ≥ 20 notes (532-533), plus un `mismatch` que personne ne lit. (5) library.js statusOf (245-252) : done sans décision ⇒ 'ready' ⇒ pill « À écouter » (259) et carte « Ton enregistrement … est calé. » (1444). (6) drawReview (1501-1542) : la phrase de l'oiseau dépend de within50 (1520-1523 : ≥ 85 « très bien calé », ≥ 70 « bien calé », sinon « hésitent ») ; trois fenêtres de 15 s (spotWindows 1544-1558) ; le verdict « Bien calé » / « Calé, quelques endroits à revoir (m. a–b) » / « Pas encore bien calé » (1532-1533, 1618) ne dépend QUE des trois réponses oui/non. (7) decide (1613-1637) envoie `verdict`, `checks`, `within50` à recording-done, gelés dans library.json (api_library.py:2396-2401). Le mot « calé » est donc soit « job terminé », soit l'écho de l'utilisateur. [verified]"
+    },
+    {
+     "question": "Pourquoi le cas Verdi est-il passé ? (avec lignes)",
+     "answer": "Quatre raisons empilées. (a) align3.gdtw doit atteindre la dernière frame de partition à la dernière frame audio (align3.py:370-371) et ne peut sauter des frames de partition que là où les voix se taisent (gok, :622-623) ; l'Ave Maria chante, donc ses 54 mesures sont comprimées au maximum autorisé (3 frames/frame), avec un tempo estimé par act/total_q (:601) qui accélère tout. Données : bars[254]=677,8 s, bars[307]=771,6 s, durées de 0,05-0,16 s (corrections_verdi). (b) La « second opinion » (:778-784) couvre aussi toute la partition entre TR0 et TR1 ; la fusion a align3 comme prior (fusion.py:151-153) et les temps battus sont capés à 0,2 s d'align3 (align_beats.py:24, :80) ; donc |fused − align3| < 0,3 s presque partout et check.doubtful reste vide (pipeline.py:835-842) [mécanisme verified, absence de flag sur le Verdi inferred : le sync Verdi n'est pas dans le zip]. (c) structure_sentences (align3.py:876-908) ne sait dire que « intro / interlude / fin sans partition » (gaps audio) et « mesures sans chant non jouées » (skips) — pas « partition plus longue » ; sync_mismatch (api_library.py:549-550) renvoie None pour align3 et n'est de toute façon lu nulle part. (d) status 'done' ⇒ « est calé » ; within50 (pipeline.py:898-915) exclut les notes dont la hauteur ne correspond pas à l'endroit prédit, donc les notes de l'Ave Maria comprimé sortent du dénominateur et le pourcentage reste présentable. [verified]"
+    },
+    {
+     "question": "Quelque chose compare-t-il la durée de la partition à la durée de l'audio ?",
+     "answer": "Une seule fonction : api_library.sync_mismatch (538-560). Elle est court-circuitée pour les calages align3 (549-550, sauf phrases de structure), ne teste que « enregistrement plus long que la partition » (555 : t1 < 0,8·dur), et son résultat `mismatch` (534) n'est lu par aucun fichier de code/app (grep sans résultat). align3.plans_for reçoit dur_audio et ne l'utilise pas (547-561) ; la seule garde de tempo (min_spq, 583-585, 602-605) ne concerne que les plans x2/x3. score_time.py compare bien la durée écrite à un tempo de référence (150-165) mais pour les pistes synthétiques, pas pour le calage. Donc : non, rien d'effectif. [verified]"
+    },
+    {
+     "question": "Le pipeline refuse-t-il jamais ?",
+     "answer": "Jamais pour cause de qualité. Un job finit 'failed' seulement si une étape `required` lève (prepare :323, separate :400, coarse :489, fuse :777, regular :810, clock :595) — c'est-à-dire si un outil plante, pas si le résultat est faux. Une étape non requise ratée (notes, check, place, score) laisse 'done' avec une liste `failed` (226-231, 981-982) que l'app n'exploite pas comme refus. align3 renvoie toujours le plan de coût minimal. Les seuls refus explicites du projet sont anchors.check_words / check_sure (partition modifiée, 383-453), words_verdict (595-603, structurellement inopérant) et la contrainte « jamais pire » du 26 sept. Raccourcir la partition (raccourcir_piece.py:1-18) est un geste de l'utilisateur, pas une détection. [verified]"
+    },
+    {
+     "question": "Que signifie « confidence » numériquement ?",
+     "answer": "Il n'y a pas une mais six grandeurs. (1) sync.agreement[bar] = {tools: nombre d'outils ayant ≥ 1 ancre dans la mesure, agree: ceux dont la médiane |ancre − carte| ≤ 60 ms} (pipeline.py:761-772) ; Mozart exemple : 16/41 mesures sans outil, 12/41 avec ≥ 1 accord. (2) check.barDiff[bar] = max |carte(q_bar) − align3(q_bar)|, |carte − second| en ms ; doubtful si > 300 ms (835-842). (3) sync.barConfidence[bar] (anchors.bar_confidence 236-257) = 1,0 si un mot est dans/à côté de la mesure, sinon agree = clip(1 − barDiff/600 ms, 0,05, 1) (0,6 si pas de barDiff), moyenné 50/50 avec la confiance des notes placées de ma voix ; None si personne ne chante. (4) sync.notes[id].conf (note_align.py:13-18) : part des frames de la note à la hauteur écrite + audibilité du départ. (5) confidence.scan : unsure si le meilleur décalage > 0,15 s avec gain relatif > 0,25, ou contraste relatif ≤ −0,25 (confidence.py:27-31, :157) — la docstring dit 0,01 et ≤ 0 : fausse. (6) sync.confidence (attendu par recaler.py:497 et app.js:1979) : jamais écrit par pipeline.py ; écrit par score_time (1,0 partout), draft_auto (0,5 partout), fusion.main (1 − part d'ancres réelles > 120 ms), align_beats.align (part de temps battus accrochés). Aucune n'est une probabilité calibrée ; aucune n'a de courbe rappel/fausses alertes publiée sauf (5) (7 sur 14, 22 % flaggées). [verified]"
+    },
+    {
+     "question": "Que couvre et ne couvre pas le jeu de vérité (une voix, ténor, pistes d'exercice avec canal voix séparé) ?",
+     "answer": "Couvre : 11 pistes d'exercice Chord Perfect de la même messe (Nelson 1-11, ténor en avant, canal Voix propre, pulsation régulière, rid 'tenor' sauf N10 'concert' avec 5 mots seulement) + Loch Lomond King's Singers (a cappella, T2) ; uniquement les notes de la voix de Léo, et pour les notes non corrigées la « vérité » est l'ancien calage machine (bench_calage.py:113-135) ; calé en 40 min pour 11 pièces (:5). Le ruler du 26 sept ajoutait Fauré CP, Passy, Southminster, King's, Nelson 4 et deux références « à l'œil » Mozart/Bach parties du résultat d'align3 (calage_refs/mozart.json status). Ne couvre pas : soprano/alto/basse comme « ma voix » ; un soliste (opéra, mélodie) ; un chœur avec orchestre réel sans canal Voix (le « mode client » Demucs a été mesuré avec basic-pitch en panne puis remesuré en une ligne, RESULTATS.md:71-73) ; un piano d'accompagnement quand la partition écrit l'orchestre ; un enregistrement plus court ou plus long que la partition (Tier A ne teste qu'intro de 8 s, coupe d'une mesure, fin allongée) ; une partition OMR fausse ; la répétabilité de Léo (calage-v3:40, 168). Le synthétique (221 extraits) reproduit le format Chord Perfect avec un rubato sinusoïdal (synth_corpus.py:31-36). [verified]"
+    },
+    {
+     "question": "Qu'obtiendrait un soliste avec rubato ?",
+     "answer": "Chaîne v2 par défaut : align3 grossier à 5 Hz avec pas de tempo pénalisés (STEP_W 1,1/1,0/1,15/1,6, align3.py:205), fin MrMsDTW par tronçon rendu à UN tempo moyen (:725-731) ; puis beat_this sur un soliste rubato (détecteur entraîné sur de la musique pulsée : ancres rares ou fausses, cf. Mozart : 2 ancres beats) ; fusion avec SMOOTH=4 qui lisse les changements de tempo (fusion.py:26) ; bar_regular qui linéarise l'intérieur de chaque mesure (bar_regular.py:27-34) ; note_align qui ne peut déplacer mes notes que ±0,25 s autour de la carte (note_align.py:11). Attendu [inferred] : barres à peu près (0,2-0,5 s) dans les passages mesurés, notes systématiquement en avance ou en retard sur les tenues de fin de phrase et les respirations, décrochage complet sur un accompagnement de piano quand la partition écrit l'orchestre (chroma différent) ou sur une cadence libre. Le rapport du 26 sept le montre déjà sur Tier A « hold » et « end » (v2 138/106 onsets > 0,25 s contre clock 69/64). Et le signal : within50 restera haut (notes mal placées exclues), agreement montrera « 0 outil » (gris, pas rouge), check.doubtful restera vide : l'app dira « calé ». La seule chose qui aiderait un soliste est la chaîne 'clock' + note_align, non défaut, jamais mesurée sur un soliste réel."
+    },
+    {
+     "question": "Dessin concret d'un signal honnête : quoi mesurer, trois états, quand refuser, quelles fonctions changer ?",
+     "answer": "MESURER (pipeline.check → objet `quality` unique dans le sync) : (1) Couverture : t_first_voice / t_last_voice par voice_activity (align3.first_entry existe :137-156 ; écrire last_exit), comparés à carte(q_first_sung) et carte(q_last_sung) ; et le nouvel état terminal d'align3 (gdtw autorisé à finir à i < M−1 avec coût de queue ; plans_for utilise enfin dur_audio) qui donne bars_not_played. (2) Plausibilité de tempo par mesure : durée / médiane des mesures chantées, aberrante si < 0,35 ou > 3 (Verdi : 0,05 s sur des mesures de 2 s). (3) Contraste local sur une évidence indépendante : confidence.scan recalibré comme détecteur de suites (≥ 6 mesures chantées sans contraste ou avec best shift > 0,5 s), pas de mesure isolée. (4) Accord réel : chaîne 'clock' vs v2 par mesure (deux chaînes, mêmes features mais contraintes différentes), ou mieux voix seules vs partition des voix. (5) L'oreille : trois fenêtres choisies sur les pires endroits de (2)-(4) et la vraie fin des voix, réponses gardées comme contraintes (q0, q1, ok). TROIS ÉTATS : « Calé » = couverture complète, 0 suite aberrante, 3 fenêtres validées ; « À vérifier » = couverture complète mais ≥ 1 suite aberrante ou ≥ 1 fenêtre refusée : liste des passages en mots, bouton Caler par phrases sur le pire ; « Pas calé » = couverture incomplète (voix après la fin de la partition ou partition chantée après la fin des voix > 20 s), ou > 20 % des mesures chantées aberrantes, ou 3 fenêtres refusées. REFUSER = état « Pas calé » : le sync reste .candidate, la carte n'affiche pas « calé », l'app dit l'une des trois causes (« la partition continue après la fin de l'enregistrement », « ce n'est peut-être pas la même pièce / édition », « je n'arrive pas à suivre : cale par phrases ») et propose Raccourcir avec la dernière mesure jouée pré-remplie. FONCTIONS : align3.gdtw + align3.align (état de fin libre, spq borné, champ coverage) ; align3.structure_sentences (phrase « continue après la fin ») ; pipeline.check (quality, refuse) ; pipeline.main (result.quality, status 'done_refused') ; api_library.progress (exposer quality, retirer within50) ; library.js readyNotice / drawReview / spotWindows / decide (mots d'état depuis quality, fenêtres depuis quality) ; reperes.computeWarnings (lire quality.bars, supprimer la clé localStorage reperes.conf) ; anchors.bar_confidence et recaler.load_ctx (lire quality ou disparaître) ; app.js renderJob/renderDiag/computeStatus (retirer within50 et la recommandation, brancher quality) ; bench_calage.evaluate (fixed vs unfixed, + score_longer) ; synth_corpus (types score_longer, rec_longer, solo_rubato, other_voice). Ordre : d'abord (1)+(2) et les trois mots (deux jours, sans IA nouvelle), puis les fenêtres, puis (3)-(4)."
+    }
+   ],
+   "not_read": [
+    "Aucun son, aucun sync réel (le sync Verdi up_suspended…json n'est pas dans le zip ; seul corrections_verdi et la carte Mozart) : l'absence de mesures « douteuses » sur le Verdi est inférée du mécanisme, pas lue.",
+    "tools/tests/fixtures/calage_bench.json et calage_truth_frozen.json (absents du zip) : impossible de compter les notes corrigées par pièce ni de rejouer le banc.",
+    "code/app/reperes.js lu partiellement (lignes 1-130, 1240-1262, 1500-1575, greps) ; code/app/calplus.js, code/app/copier.js non lus ; code/tools/api_recaler.py, unfold_piece.py, entry_anchor.py (corps), note_align.py (corps), align2.py, consensus.py (corps), make_roll2.py (corps), draft_auto.py non lus.",
+    "code/app/editor.js (1 608 lignes) : lu l'en-tête seulement, c'est le module « Corriger la partition », hors calage.",
+    "rapports/regard-neuf*, rapports/audit-2026-10-06, RAPPORT-CALAGE de la nuit du 7-8 oct (référencé, absent du zip : RESULTS/PUPITRE/nuit-2026-10-07) non lus.",
+    "code/claude/HANDOFF.md : lu par greps ciblés (within50, Verdi, SHIFT_SCAN, 2026-10-08), pas intégralement.",
+    "Je n'ai rien exécuté du zip ; les durées de mesure du Verdi et les comptes d'agreement Mozart viennent de deux scripts à moi (scratchpad/agents/calage/keys.py, agree.py) lancés avec python3 -I sur les JSON d'exemple."
+   ],
+   "need_to_go_further": [
+    "Le sync Verdi (calage/up_suspended…json) et son job.json : vérifier directement check.doubtful, agreement, result.after.within50 et sources sur le cas qui a échoué.",
+    "Les deux fixtures de vérité (calage_bench.json, calage_truth_frozen.json) avec n_fixed_notes par pièce, pour recalculer les pourcentages sur les seules notes corrigées.",
+    "Les dossiers runs/ du banc (Pupitre-data/cache/bench/*) pour compter, sur 12 pièces, combien de mesures ont réellement |fused − align3| > 0,3 s : si < 3 %, le contrôle ne mesure rien.",
+    "Trente secondes d'audio libre (Mozart du zip) pour exécuter align3 sur un audio tronqué à 60 % et prouver la compression de fin sans aucune vérité.",
+    "Un calage note à note fait par un tiers (pas Léo) sur 1 minute de soliste réel et 1 minute de chœur avec orchestre, à l'aveugle, pour avoir une vérité qui n'est pas la nôtre.",
+    "Savoir si « Recaler ce passage » (recaler.py / calplus.js) est encore accessible dans l'interface du 8 oct, pour décider s'il faut le réparer ou le retirer."
+   ]
+  }
+ ],
+ "findings": [
+  {
+   "id": "phrases/phrases-aucun-moteur",
+   "title": "Aucun chemin ne relie des bords de phrase à la carte des mesures : la seule interaction que Léo sait faire n'existe pas dans le produit",
+   "severity": "critical",
+   "category": "missing",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "rapports/caler-phrases-2026-10-08/RESULTATS.md",
+     "line": 70,
+     "quote": "## 3. Comment ces bords piloteraient le vrai calage"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 9,
+     "quote": "An anchor: {q, bar, beat, n, lyric, t}"
+    },
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 444,
+     "quote": "anc_args = ['--anchors', ap] + (['--soft-anchors', str(SOFT_LAMBDA)] if spec.get('soft_anchors') else ['--anc-tol', '2'])"
+    },
+    {
+     "file": "code/tools/recaler.py",
+     "line": 48,
+     "quote": "ANCHOR_TOL = 0.04         # s: hard anchors"
+    },
+    {
+     "file": "code/app/maquettes/caler-phrases/caler-phrases.js",
+     "line": 363,
+     "quote": "'Ensuite, Pupitre recale chaque phrase entre ses deux bords : les mots à l’intérieur suivent.'"
+    }
+   ],
+   "detail": "Tout ce qui existe côté serveur manipule des points (q, t) : bend_words dans anchors.py, align3 avec --anchors (plan « straight » seulement, tolérance 2 trames grossières = 0,4 s), recaler.py avec ancres dures. Rien ne prend un intervalle [qDébut, qFin] → [t0, t1]. La section 3 du rapport est de la prose, pas une fonction ; la phrase de pied de la maquette (« Ensuite, Pupitre recale chaque phrase entre ses deux bords ») promet un comportement qu'aucun code ne réalise. Léo a dit deux fois en deux jours qu'il pense en phrases (« à partir d'ici jusque-là, c'est cette phrase-là ») et le produit vendu doit marcher pour des gens qui ne lisent pas la musique : c'est donc la pièce centrale du calage manuel, et elle est à zéro ligne de code produit à 18 jours de la bêta. Le moteur adéquat existe pourtant déjà (recaler.py : DP sur nœuds, ancres à ±40 ms, confiance par mesure) ; il manque uniquement la couche qui transforme N phrases en ancres et appelle recaler.py tranche par tranche.",
+   "what_instead": "Écrire tools/phrases.py avec une seule fonction publique phrase_map(data, sync, phrases, duration) -> (map, barConfidence, absent_bars) : (1) chaque phrase donne deux ancres (qDébut→t0, qFin→t1) ; (2) à l'intérieur d'une phrase, l'ancienne carte est remise à l'échelle affinement entre les deux bords (tempo constant dans la phrase en v1) ; (3) entre la fin d'une phrase et le début de la suivante, appeler recaler.analyse(ctx, k_first, k_last) avec les deux bords comme ancres dures (il sait déjà faire) et garder sa confiance par mesure ; repli : linéaire et confiance basse ; (4) après la dernière phrase posée ou marquée absente : t = null pour les mesures, jamais une compression. Exposer POST library/phrases dans api_library.py à côté de 'anchors' (api_library.py:2624-2639). Puis note_align.py à l'intérieur de [t0,t1] pour les notes de ma voix.",
+   "experiment": "Sur le Verdi de Léo (sync d'avant 13:33 dans calage/history, fcpe.npy déjà calculé) : poser à la main les 49 phrases avec la variante 1 (10-15 min), produire la carte avec le prototype de phrase_map, et compter les notes de la voix dont le début tombe à moins de 150 ms d'un début de run voisé de fcpe, avant / après. Si ce chiffre ne monte pas nettement (> 20 points), la méthode ne vaut pas la bêta.",
+   "area_key": "phrases",
+   "area": "Interaction de calage par mots et par phrases (Caler avec des mots, maquette Caler par phrases, anchors.py)",
+   "severity_original": "critical",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "phrases/far-s-seuil-patch",
+   "title": "FAR_S = 0,75 s est un patch binaire qui classe mal le premier mot que Léo a posé sur le Verdi",
+   "severity": "high",
+   "category": "wrong",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/anchors.py",
+     "line": 499,
+     "quote": "FAR_S = 0.75        # Loch (7 Oct): right words were up to 0.59 s from a calage that was right around them"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 553,
+     "quote": "if far is None or abs(d) <= far:"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 554,
+     "quote": "knots.append((b, 0.0))"
+    },
+    {
+     "file": "rapports/caler-phrases-2026-10-08/RESULTATS.md",
+     "line": 6,
+     "quote": "(« Mi » +0,57 s, « pa-re-a » +1,0 s, « M'ingiunse » +0,05 s)"
+    },
+    {
+     "file": "rapports/caler-phrases-2026-10-08/RESULTATS.md",
+     "line": 23,
+     "quote": "le seuil 0,75 s est un choix (les mots justes de Loch allaient jusqu'à 0,59 s) ; les mots réels de Léo sur le Verdi étaient à 0,57 et 1,0 s, donc à la frontière"
+    }
+   ],
+   "detail": "La distance d'un seul mot à une carte que l'on sait fausse ne peut pas dire si le calage est « imprécis ici » ou « perdu ici » : les deux cas de référence se chevauchent (Loch juste jusqu'à 0,59 s, Verdi perdu à 0,57 s). Avec 0,75 s, « Mi » (+0,57) est traité comme un mot « près » : seule sa note bouge, la note d'avant est écrasée (anchors.py:534-538) et tout le reste retombe sur le calage perdu, soit exactement le comportement que Léo a décrit. « pa-re-a » (+1,0) est « loin » et emporte la suite jusqu'à « M'ingiunse » (+0,05, « près ») ; après la note de ce troisième mot, knots.append((b, 0.0)) ramène la carte sur l'ancien calage faux [inferred par trace de :540-583]. Le comportement est discontinu : 20 ms de différence dans le lâcher d'une marque font basculer entre « une note bouge » et « toute la suite bouge ». Le rapport le dit lui-même (« pas écouté par un humain »). Ce n'est pas un design, c'est un nombre choisi entre deux cas, et il ne couvre même pas le cas qui l'a motivé.",
+   "what_instead": "Supprimer la branche far (anchors.py:557-583) et ne garder bend_words que comme retouche locale d'une note à l'intérieur d'une phrase déjà posée. La décision « ici le calage est perdu » doit venir d'une information de région, pas d'un tap : soit les bords de phrase posés par l'utilisateur (voir phrases-aucun-moteur), soit le contraste de confidence.py (déjà écrit : scan() renvoie unsure par mesure) sur les mesures autour du mot.",
+   "experiment": "Rejouer les 3 mots réels de Léo (history 13:33) à travers bend_words tel quel et écouter les mesures 136-160 avec la ligne rouge : si après « M'ingiunse » la suite est à nouveau décalée, la phrase « ça marche sur un, puis après tout le reste est faux » reste vraie après le correctif.",
+   "area_key": "phrases",
+   "area": "Interaction de calage par mots et par phrases (Caler avec des mots, maquette Caler par phrases, anchors.py)",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "phrases/jamais-pire-tautologique",
+   "title": "Le garde-fou « jamais pire » (words_verdict) ne peut pas se déclencher pour le moteur vivant",
+   "severity": "high",
+   "category": "oversold",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/anchors.py",
+     "line": 599,
+     "quote": "before = [abs(t - float(np.interp(q, om[:, 0], om[:, 1]))) for q, t in pts]"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 600,
+     "quote": "after = [abs(t - float(np.interp(q, nm[:, 0], nm[:, 1]))) for q, t in pts]"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 655,
+     "quote": "verdict = words_verdict(cur['map'], mm, wpts)"
+    },
+    {
+     "file": "code/tools/tests/anchors_words_test.py",
+     "line": 98,
+     "quote": "bad = [[q, t + 0.8] for q, t in np.asarray(before['map']).tolist()]"
+    },
+    {
+     "file": "code/claude/HANDOFF.md",
+     "line": 446,
+     "quote": "words_verdict (la plupart des mots plus loin qu'avant -> calage d'avant gardé, {ok:false, kept:true})"
+    }
+   ],
+   "detail": "words_verdict mesure, pour chaque mot posé, sa distance à la carte avant et après. Or bend_words construit la nouvelle carte pour passer exactement par chaque mot (knots (q, d) puis interp, :551 et :588) : « after » vaut ~0 par construction, « worse » vaut toujours 0, verdict.ok est toujours vrai. Le message de refus de :659 (« Avec ces mots, le calage serait plus loin de ce que tu entends ») est du code mort. Le test qui « prouve » le refus fabrique une carte décalée de 0,8 s à la main (anchors_words_test.py:98-100), une carte que bend_words ne produira jamais. Le HANDOFF présente ce verdict comme une protection ; elle ne protège de rien. Seul hold_sure peut écarter des mots, et pour une autre raison.",
+   "what_instead": "Mesurer « jamais pire » sur une évidence indépendante de l'entrée : dans les zones touchées (info['zones']), la part des débuts de notes de ma voix qui tombent à moins de 150 ms d'un début de run voisé (fcpe.npy / crepe.npy déjà en cache, lus par remake_roll :765) avant et après. Refuser ou avertir si elle baisse. Supprimer words_verdict ou le renommer en ce qu'il est (un assert que la carte passe par les mots).",
+   "experiment": "Sur la fixture Loch (hors zip) : calculer ce taux pour la carte d'avant, la carte du moteur 11:23 et bend_words ; si le taux de bend_words est inférieur à celui d'avant sur un seul cas, le verdict actuel l'aurait laissé passer.",
+   "area_key": "phrases",
+   "area": "Interaction de calage par mots et par phrases (Caler avec des mots, maquette Caler par phrases, anchors.py)",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "phrases/phrase-sans-modele",
+   "title": "Une phrase posée dans la maquette ne sait ni sa première note, ni sa dernière, ni sa voix ; le « bar » exporté est faux pour les 2e et 3e phrases d'un segment",
+   "severity": "high",
+   "category": "weak",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/app/maquettes/caler-phrases/caler-phrases.js",
+     "line": 78,
+     "quote": "s.pl[s.sel] = { t0: Math.round(t * 100) / 100, t1: null, by: 'toi', ok: true };"
+    },
+    {
+     "file": "code/app/maquettes/caler-phrases/caler-phrases.js",
+     "line": 411,
+     "quote": "return { n: i + 1, text: p.t, bar: p.bar, start: x ? x.t0 : null, end: x ? x.t1 : null, by: x ? x.by : null, checked: !!(x && x.ok), absent: isOff(i) };"
+    },
+    {
+     "file": "rapports/caler-phrases-2026-10-08/scripts/build.py",
+     "line": 46,
+     "quote": "P.append({'t':t,'bar':ph[a]['m'],'q0':round(s,2),'q1':round(e,2),'seg':a})"
+    },
+    {
+     "file": "rapports/caler-phrases-2026-10-08/scripts/build.py",
+     "line": 106,
+     "quote": "for p in P: p.pop('seg'); p.pop('q0'); p.pop('q1')"
+    },
+    {
+     "file": "rapports/caler-phrases-2026-10-08/scripts/build.py",
+     "line": 17,
+     "quote": "(7,7,[\"Mia madre aveva una povera ancella, innamorata e bella;\",\"era il suo nome Barbara;\"]),"
+    }
+   ],
+   "detail": "« Copier mes repères » produit {n, text, bar, start, end, by, checked, absent}. Le « bar » vient de ph[a]['m'], la mesure du premier segment ; quand un segment porte plusieurs phrases (lignes 13, 17, 18, 20, 21, 26, 28, 33, 41 de LIB), toutes héritent du même bar. Les positions q0/q1 calculées (au prorata des caractères, :43-46) sont retirées avant export (:106). Il n'y a pas de clé de voix (Emilia vs Desdémone n'est qu'un libellé 'who'). anchors.py exige q, ou bar + beat, par ancre (:9-12) : ce JSON ne peut donc alimenter aucun moteur existant, et il ne pourrait pas non plus alimenter un moteur de phrases. La maquette teste un geste, mais le geste produit une donnée inutilisable ; personne ne peut savoir si « 10 minutes de taps » donnent un calage, parce que rien ne peut être calculé derrière.",
+   "what_instead": "Définir dans docs/PUPITRE-FORMAT.md et dans caler-phrases.js le modèle minimal {voice, qStart (q de la première note chantée de la phrase dans cette voix), qEnd (q + len de sa dernière note), t0, t1, by, checked, absent, text}. qStart/qEnd se calculent une fois depuis data.voices (les silences ≥ 1 noire et la ponctuation, comme phrases.py:34-48 le fait déjà) et sont stockés, jamais recalculés à l'export. Les numéros de mesure ne sont qu'un affichage.",
+   "experiment": "",
+   "area_key": "phrases",
+   "area": "Interaction de calage par mots et par phrases (Caler avec des mots, maquette Caler par phrases, anchors.py)",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "phrases/variante3-proposition-fabriquee",
+   "title": "La variante 3 « Pupitre propose » repose sur des repères d'une expérience hors zip, découpés au nombre de caractères et espacés de force",
+   "severity": "medium",
+   "category": "oversold",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "rapports/caler-phrases-2026-10-08/scripts/build.py",
+     "line": 84,
+     "quote": "AN=json.load(open(os.path.expanduser('~/Desktop/00_CLAUDE/RESULTS/PUPITRE/verdi-lecture-parfaite-2026-10-08/ecoute/anchors.json')))"
+    },
+    {
+     "file": "rapports/caler-phrases-2026-10-08/scripts/build.py",
+     "line": 45,
+     "quote": "s=q0+(q1-q0)*acc/tot; acc+=len(t); e=q0+(q1-q0)*acc/tot"
+    },
+    {
+     "file": "rapports/caler-phrases-2026-10-08/scripts/build.py",
+     "line": 103,
+     "quote": "if P[i]['g'][0]<P[i-1]['g'][0]+0.4: P[i]['g']=[round(P[i-1]['g'][0]+0.6,2),round(max(P[i]['g'][1],P[i-1]['g'][0]+1.2),2)]"
+    },
+    {
+     "file": "rapports/caler-phrases-2026-10-08/RESULTATS.md",
+     "line": 62,
+     "quote": "Pas vérifiée à l'oreille : plusieurs blocs sont sûrement faux ou trop longs"
+    }
+   ],
+   "detail": "Les 49 blocs de la variante 3 viennent de 139 repères de mesure trouvés par l'expérience « lecture parfaite » (hauteurs chantées) — fichier absent du zip et produit par un agent —, interpolés, puis collés sur le run de voix le plus proche (±0,6 s / ±1 s), puis forcés à 0,6 s d'écart minimum. Les bords entre deux phrases d'un même segment sont au prorata des lettres du texte. Ce que Léo jugerait en cliquant la variante 3, c'est la qualité d'une devinette non reproductible, pas celle d'un produit. Dans le produit réel, « Pupitre propose » = la carte automatique du pipeline, celle qui était « presque tout faux » sur le Verdi : 49 blocs « à vérifier » dont la moitié sont faux, c'est 49 décisions pour un débutant, et c'est pire que la variante 1 qui n'en demande qu'une par phrase.",
+   "what_instead": "Retirer la variante 3 de la bêta. La proposer plus tard seulement quand (a) une confiance par phrase existe (ratio durée réelle / durée écrite cohérent avec les voisines, ou min-marginales de recaler.py) et (b) elle n'affiche que les phrases dont la confiance est haute, les autres restant à poser en variante 1.",
+   "experiment": "Compter, sur le Verdi, combien des 49 blocs proposés ont un t0 à moins de 0,5 s du vrai départ chanté (à l'oreille, 49 écoutes de 3 s = 10 min). En dessous de 75 %, la variante 3 coûte plus qu'elle ne rapporte, selon le propre critère du rapport (ligne 66).",
+   "area_key": "phrases",
+   "area": "Interaction de calage par mots et par phrases (Caler avec des mots, maquette Caler par phrases, anchors.py)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "phrases/phrases-non-monotones",
+   "title": "La maquette accepte des phrases dans le désordre et des blocs qui se chevauchent",
+   "severity": "medium",
+   "category": "weak",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/app/maquettes/caler-phrases/caler-phrases.js",
+     "line": 77,
+     "quote": "const t = Math.max(0, au.currentTime - 0.15 * rate); // (the hand is a little late on the ear)"
+    },
+    {
+     "file": "code/app/maquettes/caler-phrases/caler-phrases.js",
+     "line": 153,
+     "quote": "t0 = clamp(t0, 0, DUR - 0.3); t1 = clamp(t1, t0 + 0.3, DUR);"
+    },
+    {
+     "file": "code/app/maquettes/caler-phrases/caler-phrases.js",
+     "line": 258,
+     "quote": "else if (drag.kind === 'move') { const d = clamp(dt, -o.t0, DUR - o.t1); x.t0 = o.t0 + d; x.t1 = o.t1 + d; }"
+    },
+    {
+     "file": "rapports/caler-phrases-2026-10-08/scripts/check.mjs",
+     "line": 69,
+     "quote": "await key('Space', ' ', 32, 'down'); await sleep(900); await key('Space', ' ', 32, 'up'); await sleep(200);"
+    }
+   ],
+   "detail": "tapDown n'impose pas t > t0 de la phrase précédente ; commit() ne vérifie ni l'ordre ni le chevauchement ; le déplacement d'un bloc ne bute sur rien. L'image 14 montre le résultat : phrase 4 à 2:50–2:51 placée AVANT la phrase 3 à 2:54 (artefact du test headless, mais l'état est accepté sans un mot). Une carte temps↔partition doit être strictement monotone ; un utilisateur qui recule de 5 s avec « Oups » puis retape, ou qui se trompe de phrase dans la liste, produira un état impossible que le moteur devra écarter en silence (comme clean_anchors le fait aujourd'hui pour les mots, anchors.py:160-162).",
+   "what_instead": "Dans tapDown/commit/endDrag : refuser (ou décaler visiblement) une phrase dont t0 ≤ t1 de la phrase précédente posée ou dont t1 ≥ t0 de la suivante ; un bloc déplacé bute sur ses voisins (comme « pousse » dans le Calage). Dire la raison en une phrase.",
+   "experiment": "",
+   "area_key": "phrases",
+   "area": "Interaction de calage par mots et par phrases (Caler avec des mots, maquette Caler par phrases, anchors.py)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "phrases/ui-texte-perime-far",
+   "title": "Le texte de l'interface et le LEXIQUE promettent encore « chaque mot déplace seulement sa note » alors qu'un mot loin emporte toute la suite",
+   "severity": "medium",
+   "category": "wrong",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/app/reperes.js",
+     "line": 1557,
+     "quote": "title=\"Chaque mot déplace seulement sa note (et celle d’avant) ; les notes sûres ne bougent pas."
+    },
+    {
+     "file": "code/docs/LEXIQUE.md",
+     "line": 49,
+     "quote": "chaque mot ne déplace que sa note et celle d’avant"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 495,
+     "quote": "a word placed FAR from the calage (more than FAR_S: the calage is not imprecise there, it is"
+    }
+   ],
+   "detail": "Depuis le 8 octobre un mot à plus de 0,75 s emporte les notes qui suivent jusqu'au prochain silence capable d'absorber, au prochain mot posé, ou à la fin de l'enregistrement (anchors.py:557-583). Le bouton « Recaler avec ces mots » dit le contraire dans sa bulle ; le LEXIQUE, qui est la règle « un mot = une idée », dit le contraire. Un client qui lit la bulle, pose un mot, et voit 40 mesures bouger ne comprendra pas, et le projet a pour règle que l'app dise ce qu'elle fait.",
+   "what_instead": "Si la règle far est gardée (je recommande de ne pas la garder) : une seule phrase vraie dans la bulle et le LEXIQUE, et le résultat « N mesures ont bougé : 12–52 » déjà calculé (R.barsMoved, reperes.js:1256) affiché systématiquement, pas effacé après 6 s (:1554-1559).",
+   "experiment": "",
+   "area_key": "phrases",
+   "area": "Interaction de calage par mots et par phrases (Caler avec des mots, maquette Caler par phrases, anchors.py)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "phrases/mots-ecartes-en-silence",
+   "title": "Un mot écarté par le serveur (croisement dans le temps, note sûre) disparaît sans rien dire ; la puce reste affichée comme posée",
+   "severity": "medium",
+   "category": "risk",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/anchors.py",
+     "line": 160,
+     "quote": "if out and t <= out[-1][1] + 0.05:"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 161,
+     "quote": "dropped.append((q, t))"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 745,
+     "quote": "'dropped': [{'q': q, 't': t} for q, t in dropped], 'method': method, 'secs': round(time.time() - t_start, 1),"
+    },
+    {
+     "file": "code/app/reperes.js",
+     "line": 1464,
+     "quote": "sv.items.push(it); sv.items.sort((a, b) => a.q - b.q);"
+    }
+   ],
+   "detail": "clean_anchors écarte tout mot dont le temps est ≤ celui du mot précédent dans la partition + 50 ms ; hold_sure écarte les mots qui croisent une note sûre (:481-483). Le serveur renvoie la liste 'dropped', mais aucune ligne de reperes.js ne lit ce champ (grep 'dropped' : zéro occurrence dans app/). cwPlace (:1457-1470) n'empêche pas de poser le mot B (plus loin dans la musique) avant le mot A dans le temps : la piste des mots montre les deux comme posés, le recalage n'en utilise qu'un, et l'utilisateur ne saura jamais lequel. Pour un débutant qui vient de passer 2 minutes à glisser une marque, c'est une perte de travail silencieuse.",
+   "what_instead": "Dans cwPlace, refuser un t qui n'est pas strictement croissant avec les mots voisins (message d'une phrase). Dans cwSend, lire j.dropped et marquer la puce correspondante « pas pris en compte » sur la piste (reperes.js:1532-1535).",
+   "experiment": "",
+   "area_key": "phrases",
+   "area": "Interaction de calage par mots et par phrases (Caler avec des mots, maquette Caler par phrases, anchors.py)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "phrases/anchors-trois-moteurs-un-vivant",
+   "title": "anchors.py porte trois moteurs (pin, soft_pin/snap_taps, bend_local/local_merge + pipeline) dont un seul est vivant ; la docstring décrit le chemin mort",
+   "severity": "medium",
+   "category": "wasted",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/anchors.py",
+     "line": 52,
+     "quote": "SOFT = False   # calage v3 (26 Sept 2026): snap + soft repères"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 369,
+     "quote": "WORDS = True        # False = the analysis + local_merge engine of 26 Sept (kept for comparison)"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 653,
+     "quote": "if WORDS:  # (7 Oct) each word moves its own note; no analysis (instant), « never worse » checked before writing"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 15,
+     "quote": "1. the pipeline runs again for this recording (mode improve, fresh, sandboxed in a work folder) with the anchors:"
+    },
+    {
+     "file": "code/tools/tests/calage_anchors_test.py",
+     "line": 9,
+     "quote": "noisy_soft   noisy taps, calage v3: each tap snapped to the nearest sung attack (≤ 0.3 s), soft pull in align3,"
+    }
+   ],
+   "detail": "Avec WORDS = True, realign() retourne à la ligne 669 : pin (:167), soft_pin (:183), snap_taps (:204), bend_local (:269), local_merge (:285), merge_notes avec zones (:334) et tout le lancement de pipeline.py (:670-717) sont inatteignables. Le docstring de tête (:14-27) décrit pourtant ce chemin mort comme ce que fait realign. Deux fichiers de tests (calage_anchors_test.py, anchors_local_test.py) testent des moteurs qui ne tournent plus dans l'app ; leur « tout est bon » entre dans les comptes. Ce sont ~450 lignes et deux suites de tests qui font croire à une couverture. En plus, les deux appels à nice (:694, :773) et à node pour lire pieces.js (:87) ne marchent pas sous Windows, contre la règle de portabilité du projet.",
+   "what_instead": "Sortir pin/soft_pin/snap_taps/bend_local/local_merge et le chemin pipeline vers labo/ ou les supprimer (git garde tout) ; réécrire le docstring pour le seul chemin vivant ; retirer calage_anchors_test.py et anchors_local_test.py du décompte des tests ; remplacer ['nice','-n',…] par un os.nice conditionnel et pieces_js() par une lecture JSON.",
+   "experiment": "",
+   "area_key": "phrases",
+   "area": "Interaction de calage par mots et par phrases (Caler avec des mots, maquette Caler par phrases, anchors.py)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "phrases/reperes-ancien-panneau-800-lignes",
+   "title": "reperes.js garde ~800 lignes d'ancien panneau « Placer des repères » derrière un drapeau, avec un en-tête qui le décrit comme actuel",
+   "severity": "medium",
+   "category": "wasted",
+   "tag": "inferred",
+   "evidence": [
+    {
+     "file": "code/app/reperes.js",
+     "line": 54,
+     "quote": "const OLD_PANEL = (() => { try { return api.store.get('reperes.oldPanel', false) === true; } catch { return false; } })();"
+    },
+    {
+     "file": "code/app/reperes.js",
+     "line": 452,
+     "quote": "if (!OLD_PANEL) return cwStart(opts); // (6 Oct: « Caler avec des mots » in the Calage replaces this panel)"
+    },
+    {
+     "file": "code/app/reperes.js",
+     "line": 4,
+     "quote": "1. Placing repères (Calage › « Repères », Mon classeur › Cette pièce › « Placer des repères », the amber bands)."
+    },
+    {
+     "file": "code/app/reperes.js",
+     "line": 716,
+     "quote": "// ---------- the editing strip: ±10 s, scroll, zoom, scrub ----------"
+    }
+   ],
+   "detail": "Les sections « placing repères » (:306-602), « Je clique sur le mot » (:604-637), la bande d'édition avec grains de scrub (:716-967), la carte HTML intro/mark/words/end/done (:1046-1157), onClick (:1189-1221) et markPop (:1282-1294) ne sont atteignables que si l'utilisateur met reperes.oldPanel = true dans le store, ce qu'aucun client ne fera. Le header du fichier (:1-17) et les commentaires de section (:306-322) les présentent comme la fonctionnalité. caler_mots_test.mjs ne couvre pas ce code. Le fichier fait 1 755 lignes pour ~500 lignes utiles (section 0 « cw », pistes, alertes, respirations). C'est le troisième écran de calage par repères écrit en deux semaines (25-26 sept, 6 oct, 7-8 oct) et chacun a laissé sa couche.",
+   "what_instead": "Supprimer tout ce qui n'est joignable que par OLD_PANEL (le scrub avec grains est dupliqué par app/scrub-engine.js) et réécrire l'en-tête. Si la bande ±10 s doit revenir pour retoucher une phrase, la reprendre depuis la maquette caler-phrases (dBody/drawDetail), pas depuis ce code.",
+   "experiment": "",
+   "area_key": "phrases",
+   "area": "Interaction de calage par mots et par phrases (Caler avec des mots, maquette Caler par phrases, anchors.py)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "phrases/test-far-jouet-durees-fausses",
+   "title": "anchors_far_words_test.py prouve un jouet uniforme ; « les notes gardent leur durée » est faux en fin de pièce et non testé",
+   "severity": "medium",
+   "category": "oversold",
+   "tag": "inferred",
+   "evidence": [
+    {
+     "file": "code/tools/tests/anchors_far_words_test.py",
+     "line": 39,
+     "quote": "smap = [[float(q), float(q)] for q in range(57)]        # the calage: 1 s per quarter"
+    },
+    {
+     "file": "code/tools/tests/anchors_far_words_test.py",
+     "line": 85,
+     "quote": "check('end: inside the recording, never backwards', m7[-1][1] <= DUR + 1e-6 and rising(m7) and abs(at(m7, 44.0) - 54.0) <= 0.01, m7[-1])"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 579,
+     "quote": "r = min(r, max(0.0, float(duration) - at(hi)))"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 581,
+     "quote": "knots.append((hi, r))"
+    },
+    {
+     "file": "code/claude/HANDOFF.md",
+     "line": 560,
+     "quote": "Test neuf `tools/tests/anchors_far_words_test.py` (17 contrôles, 7 en échec avant)"
+    }
+   ],
+   "detail": "La fixture est une carte à 1 s par noire, quatre phrases identiques, des silences de 4 s tous égaux, et un seul décalage de +4 s : aucun tempo variable, aucune dérive, aucun silence court. Cas 7 (mot (44, 54), DUR 62) : par trace de :577-583, knots = (39,0), (44,10), (56,6) ; la dernière phrase (8 noires) passe de 8 s à 5,33 s, soit des notes à 0,67 s au lieu de 1 s : la promesse « les notes chantées gardent leur durée » est violée de 33 % et le test ne vérifie que « fin ≤ DUR et croissant ». Aucun cas loin→près (la séquence réelle de Léo), aucun cas de deux mots loin en sens contraires, aucun cas sur la vraie carte du Verdi alors qu'elle est sur disque (history 13:33). « 7 en échec avant, 17 bons après » est un test écrit pour faire passer le correctif, pas une mesure.",
+   "what_instead": "Ajouter au test : (a) le cas 7 avec vérification des durées de la dernière phrase ; (b) la séquence (+0,57 près, +1,0 loin, +0,05 près) sur une carte volontairement fausse de 1 s à partir de la 2e phrase, avec vérification que la 4e phrase est corrigée (elle ne le sera pas) ; (c) un cas rejoué depuis la fixture Verdi. Tant que (b) échoue, ne pas dire que le bug est corrigé.",
+   "experiment": "Exécuter bend_words sur smap de la fixture avec pts=[(20,20.57),(26,27.0),(32,32.05)] et mesurer l'erreur de la phrase 4 contre truth(q)=q+4 : elle restera à 4 s.",
+   "area_key": "phrases",
+   "area": "Interaction de calage par mots et par phrases (Caler avec des mots, maquette Caler par phrases, anchors.py)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "phrases/barconfidence-1-par-construction",
+   "title": "barConfidence vaut 1,0 autour de chaque mot posé et 0,6 par défaut : le seul signal de doute du Calage est fabriqué, pas mesuré",
+   "severity": "high",
+   "category": "oversold",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/anchors.py",
+     "line": 251,
+     "quote": "near = any(a - 1e-6 <= q < e + 1e-6 for q in aq) or any(abs(q - a) <= m['len'] + 1e-6 for q in aq)"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 253,
+     "quote": "agree = 0.6 if d is None else max(0.05, min(1.0, 1.0 - d / 600.0))"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 256,
+     "quote": "out.append(1.0 if near else round(c, 2))"
+    },
+    {
+     "file": "code/app/reperes.js",
+     "line": 69,
+     "quote": "if (Array.isArray(conf) && conf.length === n) conf.forEach((c, i) => { if (Number.isFinite(c) && c < 0.3) flagged.add(i); });"
+    }
+   ],
+   "detail": "Après un recalage par mots, la mesure du mot et toute mesure dont le début est à moins d'une mesure du mot reçoivent 1,0, quel que soit ce que bend_words a fait aux notes voisines (écrasées à 40 %, phrase compressée de 33 %). Les mesures sans barDiff reçoivent 0,6, c'est-à-dire « pas de doute ». reperes.js ne lève une bande ambrée qu'en dessous de 0,3, soit barDiff > 420 ms. Résultat : après avoir posé des mots sur un calage perdu, l'app n'affiche aucun doute là où l'utilisateur vient d'agir, précisément là où le moteur a le plus déformé. Dans un produit où Léo a déjà vu « Calé » sur un calage faux partout, c'est le même mécanisme : une confiance qui dit « où l'on a touché » et non « où l'on a vérifié ». confidence.py (contraste par décalage, :1-30) existe et n'est pas appelé ici.",
+   "what_instead": "Dans _finish, remplacer bar_confidence par : pour les mesures entre deux ancres, le contraste de confidence.scan (déjà écrit) ou, en attendant, la cohérence du ratio (t1−t0)/(qEnd−qStart) avec les phrases voisines ; jamais 1,0 par construction. Montrer la confiance par phrase (« cette phrase semble trop longue ») plutôt que par mesure.",
+   "experiment": "Sur le Verdi après les 3 mots de Léo : afficher barConfidence et compter les mesures à 1,0 ; puis écouter ces mesures. Si une seule est fausse à l'oreille, la confiance ment.",
+   "area_key": "phrases",
+   "area": "Interaction de calage par mots et par phrases (Caler avec des mots, maquette Caler par phrases, anchors.py)",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "phrases/barres-main-remplacees",
+   "title": "Un recalage par mots remplace toutes les barres posées à la main par les barres automatiques",
+   "severity": "medium",
+   "category": "data-loss",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/app/reperes.js",
+     "line": 1251,
+     "quote": "// hand-moved bars would hide the new calage: it becomes the current one (⌘Z / Historique give them back)"
+    },
+    {
+     "file": "code/app/reperes.js",
+     "line": 1253,
+     "quote": "if (hadBars && B && B.length === S.bars.length) api.saveEdit({ bars: B, fix: S.fix || {}, hand: [] }); // (4 Oct: every bar is the automatic one again: « devinée »)"
+    },
+    {
+     "file": "code/app/reperes.js",
+     "line": 1233,
+     "quote": "api.calage.keep(`Avant les repères (${hm})`, before);"
+    },
+    {
+     "file": "donnees-exemple/formats/corrections_verdi-calage-a-la-main.json",
+     "line": 1,
+     "quote": "\"versions\": [{\"name\": \"Avant les repères (13:33)\""
+    }
+   ],
+   "detail": "Si l'utilisateur avait déplacé des barres à la main (edit.bars), poser UN mot et recaler remplace toutes ses barres par celles de la nouvelle carte automatique et les marque « devinées » ; les notes corrigées (fix) sont gardées. Le point de retour existe (« Avant les repères » dans l'Historique, visible dans le fichier d'exemple du Verdi), donc ce n'est pas une perte définitive, mais c'est une perte silencieuse : rien ne dit « tes 12 barres à la main ont été remplacées ». Sur le jeu de vérité Léo n'a jamais déplacé de barres (calage-verite RESULTATS.md:8), ce qui explique que personne ne l'ait vu ; un client qui travaille par barres le verra.",
+   "what_instead": "Soit les barres à la main deviennent des ancres (q de la barre, t à la main) passées à bend_words/phrase_map comme les notes sûres (hold_sure), soit le message de résultat dit explicitement « N barres que tu avais posées ont été remises en automatique · Revenir ». Jamais un remplacement muet.",
+   "experiment": "",
+   "area_key": "phrases",
+   "area": "Interaction de calage par mots et par phrases (Caler avec des mots, maquette Caler par phrases, anchors.py)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "phrases/mots-poses-localstorage",
+   "title": "Les mots posés vivent dans localStorage du navigateur, pas dans Pupitre-data, et ne sont pas dans la liste des données à protéger",
+   "severity": "medium",
+   "category": "data-loss",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/app/reperes.js",
+     "line": 339,
+     "quote": "try { api.store.set('reperes.pending.' + saved.sync, { at: Date.now(), items: saved.items, i: saved.i, src: saved.src, sent: saved.sent, dirty: saved.dirty, sureSig: saved.sureSig || '' }); } catch {}"
+    },
+    {
+     "file": "code/app/app.js",
+     "line": 75,
+     "quote": "set(k, v) { const j = JSON.stringify(v); memo.set(k, j); try { localStorage.setItem('pupitre.' + k, j);"
+    },
+    {
+     "file": "code/app/userdata.js",
+     "line": 49,
+     "quote": "{ re: /^reperes\\.conf\\.(.+)$/, scope: 'rec', what: 'réglages des repères' },"
+    },
+    {
+     "file": "code/claude/HANDOFF.md",
+     "line": 437,
+     "quote": "rien n'est écrit dans les corrections"
+    }
+   ],
+   "detail": "Les mots posés (syllabe, voix, temps) sont la matière première du calage manuel ; ils sont gardés uniquement sous pupitre.reperes.pending.<sync> dans localStorage. userdata.js, qui liste les clés « que Léo serait triste de perdre », ne connaît que reperes.conf.*. Le sync écrit par le serveur garde bien des ancres {bar, beat, q, t} (anchors.py:728) mais sans syllabe ni voix, et seulement après un recalage réussi. Un navigateur nettoyé, un autre navigateur, la clé USB sur un autre poste (règle 7 du projet) : les mots posés mais pas encore envoyés disparaissent, et ceux envoyés ne sont plus retouchables par leur nom. Même règle à prévoir pour les phrases posées, qui prendront 10 minutes à refaire.",
+   "what_instead": "Écrire les mots/phrases posés dans Pupitre-data/corrections/<rec>.json à côté de edit (c'est le fichier qui a déjà un historique et un fingerprint), via api.saveEdit ou un champ dédié 'reperes', et ajouter la clé à userdata.js. Le serveur lit alors la même source que l'app.",
+   "experiment": "",
+   "area_key": "phrases",
+   "area": "Interaction de calage par mots et par phrases (Caler avec des mots, maquette Caler par phrases, anchors.py)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "phrases/suggestions-mots-dependent-omr",
+   "title": "Toute l'interaction mot par mot (mot jaune, suggestions, libellés) suppose des paroles lues justes ; sur le Verdi elles sont du bruit",
+   "severity": "high",
+   "category": "wrong",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/app/reperes.js",
+     "line": 1373,
+     "quote": "out.push({ q: L.q, text: String(L.text || '').replace(/[-_–]/g, '').trim(), hyphen: !!L.el.querySelector?.('rect'),"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 884,
+     "quote": "if len(lw) < 4 and not famous and q != first_q:   # short words (« the », « et », « tes ») slip by unnoticed"
+    },
+    {
+     "file": "code/app/reperes-core.js",
+     "line": 82,
+     "quote": "export function wordEase(lyric) {"
+    },
+    {
+     "file": "rapports/caler-phrases-2026-10-08/RESULTATS.md",
+     "line": 32,
+     "quote": "Les paroles lues sont illisibles (« Mi pu-n'a Mïngiunsc ») : cliquer un mot sur la partition n'a pas de sens tant"
+    },
+    {
+     "file": "rapports/caler-phrases-2026-10-08/scripts/build.py",
+     "line": 12,
+     "quote": "# the clean words (Boito's libretto, public domain) for each segment the reading cut at its rests: (first, last, [phrases])"
+    }
+   ],
+   "detail": "La cible du clic est la syllabe imprimée (sylBoxes depuis S.lyrics) ; les suggestions classent les mots par consonnes fortes, mots « célèbres » et longueur (anchors.py:800-886, reperes-core.js wordEase) ; le libellé de la puce est la syllabe. Avec des paroles lues comme « Mïngiunsc » (fait établi : 1 019 syllabes sur 5 numéros de ligne avant réparation, 13 syllabes seulement pour V2 après), l'utilisateur ne reconnaît pas le mot, le mot proposé par cwStart (reperes.js:1716-1718) est un mot inventé, et la correspondance syllabe→note est elle-même douteuse. La maquette de phrases a dû taper le livret à la main (build.py:13-39) : l'auteur a donc constaté que la donnée d'entrée n'existe pas. Le rapport le dit en une ligne, mais le produit continue de proposer « Corriger le calage avec quelques mots » après chaque nouvel enregistrement (app.js:3951, reperes.js:121).",
+   "what_instead": "Ne plus dépendre des paroles lues : l'utilisateur colle le texte (livret, feuille de paroles), Pupitre le coupe en phrases (ponctuation) et les aligne sur les silences de la voix dans data.voices en ne comptant que le NOMBRE de syllabes (le rapport le propose lui-même, :91-93). Le texte collé sert d'affichage ; les notes servent de bords. Désactiver l'entrée « Corriger avec quelques mots » tant que la ligne de paroles de la voix n'est pas jugée lisible (ratio de syllabes alphabétiques, mots du dictionnaire de la langue).",
+   "experiment": "Prendre les 49 phrases du livret et les 842 notes de V1 du MusicXML réparé : compter les syllabes par phrase (règles italiennes simples) et vérifier que la somme des syllabes tombe à ±10 % du nombre de notes avec syllabe entre deux silences ≥ 1 noire. Si oui, le collage de texte suffit et l'OMR des paroles n'est plus bloquant pour le calage.",
+   "area_key": "phrases",
+   "area": "Interaction de calage par mots et par phrases (Caler avec des mots, maquette Caler par phrases, anchors.py)",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "phrases/fin-enregistrement-non-modelisee",
+   "title": "« La partition continue après la fin de l'enregistrement » n'existe dans aucune structure de données : la carte donne un temps à chaque mesure, toujours",
+   "severity": "high",
+   "category": "missing",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/anchors.py",
+     "line": 224,
+     "quote": "def bars_from_map(data, smap):"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 226,
+     "quote": "return [{'n': m['n'], 'ql': m['ql'], 'len': m['len'], 't': round(float(np.interp(m['ql'], mp[:, 0], mp[:, 1])), 3)}"
+    },
+    {
+     "file": "rapports/caler-phrases-2026-10-08/RESULTATS.md",
+     "line": 29,
+     "quote": "Le calage automatique a quand même casé les mesures 255 à 308 (l'Ave Maria, 5 minutes de musique) entre 11:18 et 12:52"
+    },
+    {
+     "file": "code/app/maquettes/caler-phrases/caler-phrases.js",
+     "line": 357,
+     "quote": "(s.offFrom >= 0 ? ` · ${N - s.offFrom} pas dans cet enregistrement` : '')"
+    }
+   ],
+   "detail": "Toute carte est une liste [[q, t]] couvrant total_ql, et bars_from_map donne un t à chaque mesure par interpolation ; bend_words borne r à duration − at(hi) (:579) ce qui COMPRIME au lieu de couper. Le sync d'exemple du Mozart (donnees-exemple/formats/calage-map_mozart-ave-verum.json) n'a aucun champ pour « hors enregistrement ». C'est la cause première du Verdi « presque tout faux » (vu le 8 oct, non corrigé) et la maquette est le seul endroit qui pose la question. Tant que la carte ne sait pas dire null, tout calage d'un enregistrement partiel sera étiré, et tout moteur de phrases devra étirer aussi.",
+   "what_instead": "Autoriser t = null dans sync.measures et un champ sync.endQ (dernière position de partition présente dans l'enregistrement) ; dans phrase_map, les mesures après la dernière phrase posée ou marquée absente reçoivent null ; app.js dessine ces mesures en gris « pas dans cet enregistrement » et la ligne rouge s'arrête à endQ. « Raccourcir la partition » (déjà fait) règle le cas où l'utilisateur veut couper ; ceci règle le cas où il veut garder la partition entière.",
+   "experiment": "",
+   "area_key": "phrases",
+   "area": "Interaction de calage par mots et par phrases (Caler avec des mots, maquette Caler par phrases, anchors.py)",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "phrases/headless-sans-oreille",
+   "title": "Le « contrôle sans écran : 26 bons, 0 erreur JS » de la maquette remplace le son par une horloge et n'a jamais placé une phrase à l'oreille",
+   "severity": "low",
+   "category": "oversold",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "rapports/caler-phrases-2026-10-08/scripts/check.mjs",
+     "line": 53,
+     "quote": "if (!realAudio) { // the test browser has no AAC: a clock stands in for the sound (test only)"
+    },
+    {
+     "file": "rapports/caler-phrases-2026-10-08/scripts/check.mjs",
+     "line": 61,
+     "quote": "await key('Space', ' ', 32); await sleep(700); await key('Space', ' ', 32); await sleep(700); await key('Space', ' ', 32); await sleep(300);"
+    },
+    {
+     "file": "rapports/caler-phrases-2026-10-08/RESULTATS.md",
+     "line": 56,
+     "quote": "26 contrôles bons, 0 erreur JS, aucune tâche de plus de 50 ms, page utilisable en 0,4 s"
+    },
+    {
+     "file": "rapports/caler-phrases-2026-10-08/scripts/check.mjs",
+     "line": 6,
+     "quote": "const base = join(homedir(), 'Library/Caches/ChromeForTesting/chrome-headless-shell');"
+    }
+   ],
+   "detail": "Le script appuie trois fois sur Espace à 700 ms d'intervalle sur une horloge simulée et déclare « 3 phrases placées ». C'est un test de plomberie (les touches font ce qu'elles font), utile, mais le rapport le présente au même rang que les « 17 contrôles » de bend_words, et personne, pas même l'agent, n'a essayé de placer une vraie phrase de Freni à l'oreille. Les chiffres que Léo doit décider (le temps pour 49 phrases, la précision du tap à 100 % et à 75 %, l'utilité de « tenir Espace ») ne sont mesurés nulle part. Les scripts du rapport ont en plus des chemins Mac absolus (check.mjs:6-8, build.py:8, phrases.py:2) : non rejouables ailleurs.",
+   "what_instead": "Un seul test qui compte : Léo (puis deux choristes) chronométré sur la variante 1 avec le vrai Verdi, en notant pour 10 phrases l'écart entre son tap et le vrai départ chanté (fcpe) ; publier moyenne et écart-type. Le reste du contrôle headless peut rester, mais hors du décompte des preuves.",
+   "experiment": "10 phrases, 3 personnes, 1 chronomètre : moyenne et écart-type de (tap − départ voisé) à 100 % et à 75 %. Si l'écart-type dépasse 0,4 s à 100 %, la vitesse 75 % devient le défaut.",
+   "area_key": "phrases",
+   "area": "Interaction de calage par mots et par phrases (Caler avec des mots, maquette Caler par phrases, anchors.py)",
+   "severity_original": "low",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "phrases/chiffres-loch-incoherents",
+   "title": "Les chiffres du cas Loch ne concordent pas entre le HANDOFF et le commentaire du code, et la fixture n'est pas dans le zip",
+   "severity": "low",
+   "category": "oversold",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/claude/HANDOFF.md",
+     "line": 446,
+     "quote": "Couplet 1 : erreur moyenne 0.175 (avant) / 0.21 (moteur 11:23) -> 0.115 s, notes à > 0.25 s 10 -> 4"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 368,
+     "quote": "0.21 s (old calage 0.175 s); this one 0.134 s, notes off by > 0.25 s 10 -> 7 (tools/tests/anchors_words_test.py)."
+    },
+    {
+     "file": "03-INVENTAIRE.md",
+     "line": 76,
+     "quote": "test fixtures `tools/tests/fixtures/loch_words/` | Copyrighted arrangement."
+    }
+   ],
+   "detail": "Même test, même couplet, deux résultats (0,115 s et 4 notes contre 0,134 s et 7 notes). L'un des deux a été écrit avant une modification et jamais mis à jour, ou le test a été retouché. Comme la fixture loch_words est hors zip (arrangement sous droits), un relecteur ne peut pas trancher. C'est le seul chiffre « réel » (40 notes mesurées à la hauteur) qui soutient bend_words, et il est instable dans les propres écrits du projet.",
+   "what_instead": "Faire imprimer les chiffres par le test lui-même (il les calcule, :88-91) et coller la sortie du test dans le rapport, jamais un nombre recopié. Choisir une seule source de vérité (le rapport), et que le commentaire du code y renvoie.",
+   "experiment": "",
+   "area_key": "phrases",
+   "area": "Interaction de calage par mots et par phrases (Caler avec des mots, maquette Caler par phrases, anchors.py)",
+   "severity_original": "low",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "phrases/min-words-1-et-lexique-dès-3",
+   "title": "Petite incohérence produit : « Recaler » dès 1 mot (code) contre « dès 3 mots posés » (LEXIQUE), avec une règle d'effet qui change selon le nombre",
+   "severity": "low",
+   "category": "weak",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/app/reperes-core.js",
+     "line": 297,
+     "quote": "export const MIN_WORDS = 1;"
+    },
+    {
+     "file": "code/docs/LEXIQUE.md",
+     "line": 49,
+     "quote": "dès 3 mots posés : Pupitre refait le calage autour d’eux"
+    },
+    {
+     "file": "code/app/maquettes/caler-mots/index.html",
+     "line": 185,
+     "quote": "Place au moins 3 mots, répartis sur la pièce. Une dizaine donne un bon calage."
+    }
+   ],
+   "detail": "Le 7 octobre le seuil est passé de 3 à 1 mot parce que Léo ne trouvait pas le bouton (« je n'arrive pas à trouver le bouton », commentaire :295-296). Le LEXIQUE garde « dès 3 », la maquette approuvée PUP-R94 dit « au moins 3 ». Un mot seul sur un calage perdu déclenche maintenant la règle far qui déplace potentiellement toute la fin de la pièce (voir far-s-seuil-patch) : le seuil 1 était défendable quand un mot ne touchait que sa note, il ne l'est plus. Le projet a pour règle qu'un mot nouveau entre d'abord au LEXIQUE ; ici le LEXIQUE est derrière le code.",
+   "what_instead": "Avec un moteur de phrases, la question disparaît (une phrase suffit, et son effet est borné à ses deux bords). En attendant : LEXIQUE et bulle alignés sur la réalité (1 mot), et le résultat « N mesures ont bougé » toujours visible.",
+   "experiment": "",
+   "area_key": "phrases",
+   "area": "Interaction de calage par mots et par phrases (Caler avec des mots, maquette Caler par phrases, anchors.py)",
+   "severity_original": "low",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "calage/calage-align3-ne-sait-pas-s-arreter",
+   "title": "align3 doit caser TOUTE la partition dans l'enregistrement : le Verdi est le comportement nominal, pas un bug",
+   "severity": "critical",
+   "category": "wrong",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/align3.py",
+     "line": 302,
+     "quote": "Path covers every score frame (advance 0..3 per audio frame"
+    },
+    {
+     "file": "code/tools/align3.py",
+     "line": 370,
+     "quote": "s = 0 if D[0, M - 1, N - 1] <= D[1, M - 1, N - 1] else 1"
+    },
+    {
+     "file": "code/tools/align3.py",
+     "line": 622,
+     "quote": "gok = np.convolve((vs_c < 0.5).astype(float), np.ones(5), 'same') > 0 if gap_rest_only"
+    },
+    {
+     "file": "code/tools/align3.py",
+     "line": 601,
+     "quote": "spq = max(0.2, min(2.0, act / sung_q))"
+    },
+    {
+     "file": "code/tools/align3.py",
+     "line": 778,
+     "quote": "spq2 = (TR1 - TR0) / FR / r['total_q']"
+    },
+    {
+     "file": "code/tools/align3.py",
+     "line": 547,
+     "quote": "def plans_for(data, score_path, dur_audio, spq_hint=None):"
+    },
+    {
+     "file": "donnees-exemple/formats/corrections_verdi-calage-a-la-main.json",
+     "line": 1,
+     "quote": "bars[254] = 677.80 s, bars[307] = 771.60 s ; durées de mesure 0.05–0.16 s (calculé)"
+    }
+   ],
+   "detail": "La programmation dynamique gdtw ne connaît que trois états : partition et audio avancent ensemble, « gap » (audio sans partition), « skip » (partition sans audio, autorisé uniquement là où les voix se taisent, gok). Le chemin DOIT se terminer à la dernière frame de partition M-1 sur la dernière frame audio N-1 (ligne 370-371). Quand la partition chante jusqu'au bout (Ave Maria) et que l'enregistrement s'arrête avant, les frames chantées ne peuvent pas être sautées : elles sont comprimées au maximum autorisé (3 frames de partition par frame audio). L'estimation de tempo (ligne 601 : temps chanté de l'audio divisé par la durée totale de la partition) renforce l'erreur en rendant tout le score plus rapide, et la « second opinion » (ligne 778) fait exactement la même hypothèse « tout rentre entre TR0 et TR1 ». plans_for reçoit dur_audio et ne s'en sert pas. Résultat mesuré dans tes propres données : 54 mesures (255-308) entre 677,8 et 771,6 s, avec des mesures de 50 à 160 ms. Aucun aligneur de cette forme ne peut produire « la partition continue après la fin ».",
+   "what_instead": "Dans align3.gdtw, ajouter un état terminal « fin de l'enregistrement atteinte à la frame de partition i » : autoriser la fin du chemin à n'importe quel i ≥ i_min (dernier chant détecté par voice_activity) avec un coût de queue proportionnel aux frames de partition chantées non couvertes, et symétriquement un début à i > 0 (déjà partiellement couvert par les skips). Dans align3.align, borner spq avec la durée écrite (score_bpm) et la durée audio réelle, pas act/total_q. Sortir dans out.json un champ `coverage` {q_first, q_last, t_first_voice, t_last_voice, bars_not_played: [a, b]} et une phrase de structure « La partition continue après la fin de l'enregistrement (mesures 255 à 308) ». Dans pipeline.check, refuser le statut « calé » si coverage.bars_not_played est non vide ou si une mesure chantée dure moins de 25 % de la médiane.",
+   "experiment": "Prendre Mozart Ave verum (exemple du zip), couper l'audio à 60 % avec ffmpeg, relancer align3 seul : vérifier que les 40 % restants sont écrasés dans les dernières secondes et que `structure` est vide. Une heure, aucune vérité nécessaire.",
+   "area_key": "calage",
+   "area": "Calage (alignement partition / enregistrement) et son signal de confiance",
+   "severity_original": "critical",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "calage/calage-check-pas-independant",
+   "title": "Le « contrôle mesure par mesure » compare le calage à lui-même : il ne peut pas voir une panne globale",
+   "severity": "critical",
+   "category": "wrong",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 176,
+     "quote": "'check': 'Les mesures où deux calages indépendants ne sont pas d’accord sont notées « à écouter »."
+    },
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 825,
+     "quote": "ops = [np.array(a3['map'])] + ([np.array(a3['second'])] if a3.get('second') else [])"
+    },
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 840,
+     "quote": "if d > 0.3 or sc.get('unsure'):"
+    },
+    {
+     "file": "code/tools/fusion.py",
+     "line": 153,
+     "quote": "rows_q.append(g); rows_t.append(float(C(g))); rows_w.append(WEIGHTS['dtw'])"
+    },
+    {
+     "file": "code/tools/align_beats.py",
+     "line": 24,
+     "quote": "MAXDEV = 0.2   # seconds: never move a beat further than this from the coarse sync"
+    },
+    {
+     "file": "code/tools/align_beats.py",
+     "line": 80,
+     "quote": "ok = (np.abs(snapped - pred2) < SNAP) & (np.abs(snapped - pred) < MAXDEV)"
+    }
+   ],
+   "detail": "check() note « douteuse » une mesure où la carte finale s'écarte de plus de 0,3 s de la carte d'align3 ou de sa « second ». Or la carte finale est la fusion (fusion.fuse) dont le prior à chaque demi-temps est align3 (C), et dont les ancres principales en mode rapide sont les temps battus, eux-mêmes accrochés à ±0,2 s de la carte align3 (MAXDEV) ; pitch2 n'entre que si rec.voice, notes = accords basic-pitch cherchés à ±0,25 s de la carte courante (fusion.py:110). La « second » est un MrMsDTW bout-à-bout sur les mêmes features, forcé lui aussi à couvrir toute la partition. Les trois « opinions » partagent donc l'hypothèse « tout rentre » et sont liées par construction : un écart > 0,3 s est presque impossible sauf localement. Sur le Verdi, les 54 mesures compressées ne sont signalées par rien (inféré du mécanisme ; le sync Verdi n'est pas dans le zip). L'exemple Mozart du zip le montre autrement : `agreement` a 0 outil dans 16 mesures sur 41 et un seul outil d'accord dans 12.",
+   "what_instead": "Une « second opinion » n'est utile que si elle ne partage ni les features ni la contrainte : (1) la chaîne 'clock' (align3 fin seul) contre v2 est un début mais même hypothèse ; (2) mieux : un alignement par les voix seules (canal Voix ou Demucs) par rapport aux voix de la partition uniquement, sans accompagnement, avec fin libre ; (3) la comparaison de durée (voir finding sync-mismatch). Remplacer `barDiff` par un objet `quality` par mesure {fit_contrast, tempo_ratio, covered} et supprimer la phrase « deux calages indépendants » de INFO.",
+   "experiment": "Sur les 12 pièces du banc, compter combien de mesures ont d > 0,3 s entre fused et align3 : si c'est < 3 %, le contrôle ne mesure rien. Un script de 20 lignes sur les runs/ existants.",
+   "area_key": "calage",
+   "area": "Calage (alignement partition / enregistrement) et son signal de confiance",
+   "severity_original": "critical",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "calage/calage-mot-cale-sans-mesure",
+   "title": "« Ton enregistrement est calé » s'affiche dès que le job est fini ; « Bien calé » n'est que l'écho des trois oui/non de l'utilisateur",
+   "severity": "critical",
+   "category": "oversold",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/app/library.js",
+     "line": 1444,
+     "quote": "<b>Ton enregistrement de « ${esc(piece.title)} » est calé.</b>"
+    },
+    {
+     "file": "code/app/library.js",
+     "line": 248,
+     "quote": "return pr?.status === 'done' && !pr.decision; })) return 'ready';"
+    },
+    {
+     "file": "code/app/library.js",
+     "line": 1532,
+     "quote": "const sentence = !bad.length ? 'Bien calé.' : bad.length === view.windows.length ? 'Pas encore bien calé"
+    },
+    {
+     "file": "code/app/library.js",
+     "line": 1618,
+     "quote": "const verdict = !bad.length ? 'Bien calé' : `Calé, quelques endroits à revoir"
+    },
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 980,
+     "quote": "job.state['status'] = 'done'"
+    },
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 858,
+     "quote": "job.step('check', check)"
+    },
+    {
+     "file": "code/tools/api_library.py",
+     "line": 2400,
+     "quote": "'verdict': b.get('verdict'), 'checks': b.get('checks'), 'within50': b.get('within50'),"
+    }
+   ],
+   "detail": "Chaîne réelle du mot : pipeline.py écrit status 'done' quelle que soit la qualité (seules prepare/separate/coarse/fuse/regular sont `required`, lignes 323, 400, 489, 777, 810 ; check ne l'est pas, ligne 858) → api_library.progress renvoie status 'done' → library.js statusOf donne 'ready' → pill « À écouter » et carte « est calé » (1444) AVANT toute écoute → drawReview affiche la phrase de l'oiseau selon within50 (1520-1523) → l'utilisateur clique « Ça suit bien » / « Pas tout à fait » sur trois fenêtres → la phrase « Bien calé » / « Calé, quelques endroits à revoir » (1532-1533, 1618) est construite UNIQUEMENT à partir de ces réponses, jamais de check.doubtful, agreement ou de quoi que ce soit mesuré → elle est gelée dans library.json comme `verdict`. Le mot « calé » que lit Léo est donc soit un synonyme de « le calcul est terminé », soit sa propre réponse renvoyée. Aucun chemin ne mène de confidence.py (éteint), check.doubtful (bandes ambre de reperes.js seulement) ou de la comparaison de durée au statut de la bibliothèque.",
+   "what_instead": "Un seul objet `quality` produit par pipeline.check (couverture, mesures à tempo aberrant, contraste local, accord réel), exposé par api_library.progress, et une seule fonction `calageState(quality, checks)` dans library.js qui rend trois mots : « Calé » (couverture complète, 0 mesure aberrante, 3 fenêtres validées), « À vérifier » (liste des passages, bouton vers Caler par phrases), « Pas calé » (couverture incomplète ou > 20 % des mesures chantées aberrantes : pas d'ajout silencieux, proposition « l'enregistrement s'arrête ici » / Raccourcir). Remplacer le texte de readyNotice par « Ton enregistrement est prêt à écouter » tant que rien n'a été validé.",
+   "experiment": "",
+   "area_key": "calage",
+   "area": "Calage (alignement partition / enregistrement) et son signal de confiance",
+   "severity_original": "critical",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "calage/calage-within50-auto-selectif",
+   "title": "within50 ne compte que les notes déjà bien placées : le chiffre qui pilote « Recommandé : garder le nouveau » est circulaire",
+   "severity": "high",
+   "category": "wrong",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 906,
+     "quote": "seg = midi[int((s + 0.3 * (e - s)) * FR):int((e - 0.1 * (e - s)) * FR) + 1]"
+    },
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 909,
+     "quote": "continue  # this note is not clearly heard: no judgement"
+    },
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 912,
+     "quote": "d = min(abs(att[max(k - 1, 0)] - s), abs(att[min(k, len(att) - 1)] - s))"
+    },
+    {
+     "file": "code/tools/tests/calage_truth.py",
+     "line": 4,
+     "quote": "in a choir (Caruso scored 100 % while 28 of 29 bars were > 1 s off)"
+    },
+    {
+     "file": "code/app/app.js",
+     "line": 3959,
+     "quote": "aft.within50 - bef.within50 >= 1 ? '✓ Recommandé : garder le nouveau (plus précis).'"
+    },
+    {
+     "file": "code/app/library.js",
+     "line": 1521,
+     "quote": "w50 >= 85 ? 'Les outils le trouvent très bien calé' : w50 >= 70 ? 'Les outils le trouvent bien calé'"
+    }
+   ],
+   "detail": "Pour chaque note de ma voix, le pipeline prend le segment audio que la CARTE prédit pour cette note ; si la hauteur médiane n'y correspond pas à la note écrite, la note est exclue (« no judgement »). Les notes mal placées sont donc retirées du dénominateur, et une note gardée réussit dès qu'une attaque quelconque (onset ou changement de hauteur, toutes voix du canal) tombe à ±50 ms. Le 26 sept, calage_truth.py le dit noir sur blanc (« within50 … cannot tell right from wrong », Caruso 100 % faux) et le relègue à « information only ». Pourtant, le 8 oct, c'est encore ce chiffre que l'oiseau commente (« Les outils le trouvent très bien calé ») et qui produit la recommandation garder/rejeter dans la fenêtre Recalculer, avec un garde-fou minimal (≥ 20 notes, api_library.py:532). Même diagnose.py (124-149) recalcule la même métrique pour la fenêtre Contrôles avec un verdict « excellent / bon / à revoir ».",
+   "what_instead": "Retirer within50 de toute phrase et de toute recommandation (library.js drawReview, app.js renderJob, diagnose/renderDiag). Si un chiffre doit rester, qu'il soit calculé sur TOUTES les notes de ma voix (y compris celles sans hauteur reconnue, comptées fausses) et affiché comme « part des notes de ta voix que j'ai entendues là où je les ai mises », avec le nombre total.",
+   "experiment": "Calculer within50 sur le Verdi avant/après ses 18 corrections de notes, et sur Mozart avec une carte décalée de +1 s : si les deux restent au-dessus de 70 %, la métrique est bonne à jeter. Script de 30 lignes sur pipeline.rate().",
+   "area_key": "calage",
+   "area": "Calage (alignement partition / enregistrement) et son signal de confiance",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "calage/calage-confidence-py-eteint-et-faux",
+   "title": "confidence.py : docstring d'un autre algorithme, code mort, et jamais activé par aucun job de l'app",
+   "severity": "high",
+   "category": "wrong",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/confidence.py",
+     "line": 7,
+     "quote": "the score (every note of every voice, in the recording's key) is laid out in time through the final map and turned into the same features align3 uses (chroma + DLNCO onsets"
+    },
+    {
+     "file": "code/tools/confidence.py",
+     "line": 13,
+     "quote": "clearly better than 0 (by more than 0.01), or when the contrast is ≤ 0"
+    },
+    {
+     "file": "code/tools/confidence.py",
+     "line": 123,
+     "quote": "o_obs, c_obs = voices_feats(voices_path, channel)"
+    },
+    {
+     "file": "code/tools/confidence.py",
+     "line": 157,
+     "quote": "unsure = (abs(best) > BEST_S and (S[kb] - S[i0]) / spread > GAIN) or contrast <= CMIN"
+    },
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 112,
+     "quote": "SHIFT_SCAN = False   # sync.check: also flag bars whose position is not clearly better than a shifted one"
+    },
+    {
+     "file": "code/tools/serve.py",
+     "line": 607,
+     "quote": "spec = {'id': f\"{piece['id']}_{rid}_{stamp()}\", 'mode': 'new', 'slow': False, 'piece': piece, 'rec': rec,"
+    },
+    {
+     "file": "rapports/calage-v3-2026-09-26.md",
+     "line": 112,
+     "quote": "Goal was ≥ 80 % caught with ≤ 10 % flagged: not reached. **Not switched on** (`SHIFT_SCAN = False`"
+    }
+   ],
+   "detail": "La docstring (lignes 1-18) décrit un scan sur les features d'align3 (score_in_time, chroma+DLNCO contre le mix) avec seuils absolus 0,01 et ≤ 0 ; le code de scan() (120-160) fait autre chose : onset_strength + chroma_stft du canal Voix contre des attaques gaussiennes et des classes de hauteur attendues, avec seuils relatifs GAIN=0,25 et CMIN=−0,25 par rapport à l'étendue des similarités. score_in_time (33-54) n'est appelé nulle part : code mort. Et tout cela est inopérant : SHIFT_SCAN=False, aucun spec créé par serve.py (/api/job, /api/upload) ne pose shift_scan, seul calage_confidence_test.py l'appelle. Le rapport du 26 sept l'a mesuré (rappel 7/14, 22 % de mesures flaggées) et éteint. 01-HISTOIRE-ET-ETAT.md:113 dit « a local confidence tool (confidence.py) … nothing warned him » sans dire que l'outil n'a jamais tourné pour Léo et que sa doc est fausse : trop gentil.",
+   "what_instead": "Soit supprimer confidence.py, soit le réécrire avec une doc exacte et le recalibrer sur un objectif réaliste : non pas « flagger les mesures à 0,25 s » (impossible avec ce signal), mais détecter une PANNE (contraste nul sur ≥ 8 mesures consécutives chantées, ou best shift > 0,5 s sur une suite). C'est un détecteur de catastrophe, pas de précision. L'activer alors par défaut dans pipeline.check avec ce seul rôle.",
+   "experiment": "Relancer calage_confidence_test.py sur les runs du banc en ne comptant que les suites de ≥ 6 mesures « unsure » : si ces suites recouvrent les « catastrophes » de bench_calage (perdues > 0,5 s) avec peu de faux positifs, l'outil a un emploi.",
+   "area_key": "calage",
+   "area": "Calage (alignement partition / enregistrement) et son signal de confiance",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "calage/calage-banc-verite-machine",
+   "title": "Le banc « officiel » du 7 oct mesure surtout l'accord de la machine avec elle-même : la vérité d'une note non corrigée est la carte machine",
+   "severity": "high",
+   "category": "oversold",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/bench_calage.py",
+     "line": 113,
+     "quote": "B = interp(mq, sync['map'])"
+    },
+    {
+     "file": "code/tools/bench_calage.py",
+     "line": 114,
+     "quote": "T = np.asarray(corr.get('bars') or B, float)"
+    },
+    {
+     "file": "code/tools/bench_calage.py",
+     "line": 135,
+     "quote": "'t': round(float(interp(f['q'] if f else q, tmap)), 4), 'fixed': bool(f)})"
+    },
+    {
+     "file": "code/tools/bench_calage.py",
+     "line": 22,
+     "quote": "Attention : le 7 oct, Léo a déplacé des NOTES, jamais des barres (aucune barre bougée sur les 12 pièces)"
+    },
+    {
+     "file": "code/tools/bench_calage.py",
+     "line": 5,
+     "quote": "quand Léo a calé à la main les 11 pièces de la Nelson « partition finale (photos) » (Chord Perfect) en 40 min"
+    },
+    {
+     "file": "rapports/calage-verite-2026-10-07/RESULTATS.md",
+     "line": 15,
+     "quote": "Toutes pièces : < 50 / 100 / 200 ms = 68,1 / 82,1 / 89,4 % → 70,8 / 84,7 / 90,9 % ; notes perdues (> 0,5 s) 86 → 66 sur 2 099."
+    },
+    {
+     "file": "code/tools/tests/calage_truth.py",
+     "line": 20,
+     "quote": "untouched  bars he never moved (agreement with an old machine calage: information only)"
+    }
+   ],
+   "detail": "Au gel, le temps « vrai » de chaque note de ma voix est interp(q, tmap) où tmap est la carte sync sur disque (celle que Léo avait sous les yeux), re-tendue par ses barres — et il n'a bougé aucune barre. Seules les notes avec un `fix` ont une vérité humaine (leur q corrigé). Pour les autres, la « vérité » EST l'ancien calage automatique. Les « 82 % des notes < 100 ms » mélangent donc des notes corrigées par Léo et des notes dont la cible est la sortie d'une version antérieure du même pipeline ; une pièce où Léo n'a rien touché (N5 : 99 → 100 %) prouve seulement que le pipeline se reproduit. Le ruler du 26 sept (calage_truth.py) avait précisément cette distinction moved/untouched et des intervalles ; le banc « officiel » du 7 oct l'a abandonnée, et RESULTATS.md ne donne même pas le nombre de notes corrigées par pièce (n_fixed_notes existe dans la fixture, ligne 139, mais n'est pas rapporté). Les 11 pièces ont été calées en 40 minutes (3,6 min par pièce) : c'est une vérification rapide, pas une vérité note à note. Les gains annoncés (+2,6 points, 86 → 66 perdues) sont à l'intérieur de ce flou.",
+   "what_instead": "Dans bench_calage.evaluate, séparer `notes_fixed` (vraie vérité) de `notes_untouched` (accord machine) comme calage_truth.py, publier les deux avec n, et interdire toute décision (recette A-H) sur le chiffre agrégé. Ajouter dans RESULTATS.md le tableau n_fixed_notes par pièce. Pour une vérité qui n'est pas la nôtre : 2-3 extraits (Dagstuhl ChoirSet ou un enregistrement du chœur de Léo annoté par un musicien tiers) placés note à note, à l'aveugle, par quelqu'un d'autre que Léo.",
+   "experiment": "Relancer bench_calage avec `--vu` et rapporter séparément notes fixed vs unfixed : si les 82 % tombent à ~50 % sur les notes corrigées, le chiffre de tête est invalide. Dix minutes avec la fixture (absente du zip).",
+   "area_key": "calage",
+   "area": "Calage (alignement partition / enregistrement) et son signal de confiance",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "calage/calage-verite-couverture",
+   "title": "Ce que la vérité ne couvre pas : tout ce qu'un client apportera",
+   "severity": "high",
+   "category": "missing",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/bench_calage.py",
+     "line": 63,
+     "quote": "'loch':     ('loch-lomond-partition-finale-photos-de-l', 'up20261006223258', 'train', 'aucun'),"
+    },
+    {
+     "file": "code/tools/bench_calage.py",
+     "line": 64,
+     "quote": "'nelson01': ('nelson-1-kyrie-partition-finale-photos-d', 'tenor', 'train', None),"
+    },
+    {
+     "file": "code/tools/synth_corpus.py",
+     "line": 36,
+     "quote": "f *= 1 + rubato * np.sin(2 * np.pi * g / period + ph)"
+    },
+    {
+     "file": "code/tools/synth_corpus.py",
+     "line": 5,
+     "quote": "Fichier stéréo comme Chord Perfect : canal 0 = orchestre, canal 1 = voix."
+    },
+    {
+     "file": "code/tools/tests/calage_warp.py",
+     "line": 5,
+     "quote": "intro   8 s of another recording … hold … tempo … cut … end"
+    },
+    {
+     "file": "rapports/calage-verite-2026-10-07/RESULTATS.md",
+     "line": 65,
+     "quote": "Reste non prouvé : 11 pièces d'un même enregistrement (Chord Perfect) + 1 Loch."
+    }
+   ],
+   "detail": "Les 12 pièces : 11 pistes d'exercice Chord Perfect de la même messe (ténor en avant, canal Voix propre fourni, pulsation régulière) et 1 Loch Lomond King's Singers (a cappella, T2). Le corpus synthétique imite ce même format (canal voix séparé) avec un « rubato » qui est une sinusoïde de période 10 noires, pas des tenues de phrase, des respirations ou des accélérations de soliste. Tier A teste intro, point d'orgue, tempo local, coupe d'une mesure, fin allongée — jamais « partition plus longue que l'enregistrement », ni « reprise non écrite au milieu », ni « piano d'accompagnement au lieu de l'orchestre écrit ». Rien n'est mesuré sur : une voix autre que ténor, un soliste d'opéra (Verdi), un rip de CD mixé avec orchestre réel séparé par Demucs (le test B « mode client » a été fait avec basic-pitch en panne puis remesuré en une ligne), une partition issue d'une mauvaise lecture OMR. Autrement dit, le banc prouve que le pipeline marche sur le cas où Léo s'entraîne, pas sur le cas vendu.",
+   "what_instead": "Ajouter au corpus synthétique les types `score_longer` (audio coupé à 50-80 %), `rec_longer` (couplet répété), `piano_reduction` (accompagnement rendu au piano quand la partition écrit l'orchestre, ou l'inverse), `solo_rubato` (tenues de 1-3 s en fin de phrase + accelerando), et un type `other_voice` (soprano/basse comme myVoice). Faire caler à la main par un tiers (pas Léo) 2 extraits de 1 minute d'un vrai soliste (Verdi) et d'un chœur avec orchestre (concert N10), à l'aveugle.",
+   "experiment": "Un seul clip synthétique de type score_longer suffit à prouver le point : si bench_calage le note « 0 perdue » parce que les notes après la coupe n'ont pas de vérité, le banc est aveugle à ce cas.",
+   "area_key": "calage",
+   "area": "Calage (alignement partition / enregistrement) et son signal de confiance",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "calage/calage-cinq-confiances",
+   "title": "Cinq « confiances » incompatibles, dont deux écrites pour personne et une lue mais jamais écrite",
+   "severity": "high",
+   "category": "wrong",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 789,
+     "quote": "new['agreement'] = ctx['per_bar']"
+    },
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 849,
+     "quote": "new['check'] = {'structure': a3.get('structure') or [], 'plan': a3.get('plan'), 'shift': a3.get('shift', 0),"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 730,
+     "quote": "new['barConfidence'] = conf"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 253,
+     "quote": "agree = 0.6 if d is None else max(0.05, min(1.0, 1.0 - d / 600.0))"
+    },
+    {
+     "file": "code/tools/recaler.py",
+     "line": 497,
+     "quote": "'conf': sync.get('confidence') or [],"
+    },
+    {
+     "file": "code/tools/recaler.py",
+     "line": 431,
+     "quote": "c_auto = float(conf[i]) if i < len(conf) else 0.5"
+    },
+    {
+     "file": "code/tools/align3.py",
+     "line": 937,
+     "quote": "'bar_cost': [round(x, 3) for x in res['bar_cost']] if straight else None,"
+    },
+    {
+     "file": "code/app/app.js",
+     "line": 1979,
+     "quote": "const fo = state.base && Array.isArray(state.base.confidence) && state.bars && state.autoB ?"
+    },
+    {
+     "file": "code/app/reperes.js",
+     "line": 1254,
+     "quote": "try { if (Array.isArray(j.confidence)) api.store.set(confKey(), j.confidence); else api.store.del(confKey()); } catch {}"
+    }
+   ],
+   "detail": "(1) `agreement` : par mesure, nombre d'outils dont la médiane des ancres est à ≤ 60 ms de la carte fusionnée — montré dans Contrôles (app.js:4064-4070) ; sur l'exemple Mozart du zip, 16 mesures sur 41 n'ont aucun outil et 12 seulement ont ≥ 1 outil d'accord (beat_this : 2 ancres sur toute la pièce). (2) `check.doubtful/sections` : barDiff > 0,3 s → bandes ambre de reperes.js. (3) `barConfidence` (anchors.bar_confidence) : 1 près d'un mot, sinon 1 − barDiff/600 ms mêlé à la confiance des notes placées, 0,6 par défaut : écrit dans le sync, lu par aucun JS (grep), seulement renvoyé dans la réponse HTTP et stocké en localStorage. (4) `confidence` : attendu par recaler.py (prior c_auto, far_anchor ligne 513) et par app.js:1979 (pianiste), mais écrit uniquement par score_time, draft_auto, align_beats.align, fusion.main et consensus.py — jamais par pipeline.py : pour tout calage réel, recaler.py travaille avec c_auto = 0,5 partout et son « look-ahead » ne s'arrête jamais sur une mesure « sûre ». (5) `bar_cost` d'align3 : calculé, écrit, jamais lu. (6) Et dans le navigateur, `redBars` « Décalage probable » (app.js:4774-4823) : un shift-scan ±0,6 s sur les notes fantômes basic-pitch et le f0 du roll — f0 qui est « score-guided » à travers la carte (make_roll2.py:6-9), donc en partie circulaire. Six définitions, aucune n'est LA confiance, aucune ne remonte au statut.",
+   "what_instead": "Un seul objet `quality` écrit par pipeline.check : {coverage, bars: [{n, state: 'ok'|'unsure'|'bad'|'silent', why}]} ; supprimer barConfidence, bar_cost, sync.confidence (ou la dériver de quality pour score_time), faire lire quality par reperes.computeWarnings, app.js renderDiag/computeStatus, recaler.load_ctx et library.js. Une page de doc (DONNEES.md) qui dit ce que chaque champ veut dire et qui le lit.",
+   "experiment": "",
+   "area_key": "calage",
+   "area": "Calage (alignement partition / enregistrement) et son signal de confiance",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "calage/calage-sync-mismatch-mort",
+   "title": "La seule comparaison durée partition / enregistrement est court-circuitée pour align3, à sens unique, et jamais affichée",
+   "severity": "high",
+   "category": "wrong",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/api_library.py",
+     "line": 549,
+     "quote": "if chk.get('aligner') == 'align3':\n            return None"
+    },
+    {
+     "file": "code/tools/api_library.py",
+     "line": 555,
+     "quote": "if dur > 30 and t1 < dur * 0.8 and dur - t1 > 15:"
+    },
+    {
+     "file": "code/tools/api_library.py",
+     "line": 534,
+     "quote": "'mismatch': sync_mismatch(res.get('candidate') or (out['rec'] or {}).get('sync'))}"
+    },
+    {
+     "file": "code/tools/align3.py",
+     "line": 904,
+     "quote": "elif t1 > dur - 1.0 or q > res['total_q'] - 1:\n            out.append(f'Fin sans partition à partir de {t0:.1f} s.')"
+    }
+   ],
+   "detail": "sync_mismatch (api_library.py:538-560) est la seule fonction du projet qui regarde la durée de l'enregistrement contre la carte. Trois défauts : (a) si le calage vient d'align3 (le défaut depuis le 25 sept), elle renvoie None à moins que structure_sentences ait quelque chose à dire — or structure_sentences ne sait décrire que les gaps audio (intro, interlude, « fin sans partition ») et les skips de mesures sans chant, jamais « la partition continue après la fin » puisque gdtw ne peut pas produire ce cas ; (b) la règle de la ligne 555 ne teste que « l'enregistrement est plus long que la partition », pas l'inverse ; (c) le champ `mismatch` est renvoyé par progress mais aucun fichier de code/app ne le lit (grep sans résultat). Résultat : un contrôle de durée existe sur le papier et n'est atteint par aucun chemin réel.",
+   "what_instead": "Un contrôle de couverture dans pipeline.check, à deux sens, basé sur voice_activity (première et dernière entrée des voix, first_entry existe déjà align3.py:137-156 ; écrire last_exit) et sur la carte : t_last_sung_note − t_last_voice > 20 s ou tempo moyen des 10 % de mesures finales < 40 % de la médiane ⇒ coverage.incomplete. L'afficher dans drawReview AVANT les trois fenêtres (« La partition semble continuer après la fin de l'enregistrement : mesures 255 à 308 ») et proposer Raccourcir.",
+   "experiment": "Sur le Verdi : t_last_voice ≈ 729 s, dernière note de la partition mise à 771 s, mesures 255-308 à 1,7 s/mesure contre 4,5 s/mesure au début. Trois nombres suffisent à déclencher un refus ; les deux premiers se lisent dans corrections_verdi et dans le rapport caler-phrases:28-31.",
+   "area_key": "calage",
+   "area": "Calage (alignement partition / enregistrement) et son signal de confiance",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "calage/calage-mots-sans-analyse-et-verdict-tautologique",
+   "title": "« Caler avec des mots » v3 ne fait plus d'analyse ; son « jamais pire » ne peut pas refuser ; ses suggestions pointent dans la mauvaise minute",
+   "severity": "high",
+   "category": "weak",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/anchors.py",
+     "line": 653,
+     "quote": "if WORDS:  # (7 Oct) each word moves its own note; no analysis (instant), « never worse » checked before writing"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 499,
+     "quote": "FAR_S = 0.75        # Loch (7 Oct): right words were up to 0.59 s from a calage that was right around them"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 601,
+     "quote": "worse = sum(1 for x, y in zip(before, after) if y > x + margin)"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 551,
+     "quote": "knots.append((q, d))"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 947,
+     "quote": "'tGuess': round(t, 2), 'window': [round(max(0.0, t - wdw), 2), round(min(dur, t + wdw), 2)], 'who': who_})"
+    },
+    {
+     "file": "code/app/reperes.js",
+     "line": 413,
+     "quote": "w0: Array.isArray(s.window) ? Math.min(s.window[0], t - 3) : t - 6, w1: Array.isArray(s.window) ? Math.max(s.window[1], t + 2) : t + 4 });"
+    },
+    {
+     "file": "rapports/caler-phrases-2026-10-08/RESULTATS.md",
+     "line": 23,
+     "quote": "Limite honnête : le seuil 0,75 s est un choix … Pas écouté par un humain."
+    }
+   ],
+   "detail": "Depuis le 7 oct, un mot posé ne relance rien : bend_words déplace la note du mot à t et absorbe sur la note d'avant / sa propre note ; depuis le 8 oct, un mot « loin » (> FAR_S = 0,75 s) emporte la suite en comprimant les silences. Le seuil est un nombre choisi entre 0,59 (Loch, mots justes) et 0,57 / 1,0 (Verdi) — c'est-à-dire exactement sur la frontière des deux seuls cas vus. words_verdict compare la distance de chaque mot à la carte avant et après : comme bend_words insère un nœud (q, d) pour chaque mot, la carte passe par les mots et `after` ≈ 0 ; `worse` est donc structurellement 0 et le « calage d'avant gardé » n'arrive jamais (inféré ; le seul cas serait la clamp monotone de la ligne 589-590). Enfin, suggestions() calcule tGuess = T(q) avec la carte actuelle et une fenêtre ±2,5 s (±4 s si douteuse) : sur un calage faux de plusieurs minutes (Verdi), l'app demande à l'utilisateur d'entendre « Mi parea » dans une fenêtre où il n'est pas chanté. Sur un calage « faux presque partout », cet outil demande un mot par phrase avec des paroles OMR illisibles (RESULTATS.md:32-33).",
+   "what_instead": "Garder bend_words pour la retouche locale (c'est bon pour Loch), mais faire précéder par un diagnostic de couverture : si quality dit « pas calé », l'entrée n'est pas « Caler avec des mots » mais « Caler par phrases » (maquette 1 « Au fil de l'écoute ») qui refait l'analyse ENTRE deux bords (pipeline mode improve avec anchors = les bords, `plans` straight, et la fin libre du finding 1). Remplacer words_verdict par un vrai test : relancer le scan de contraste (confidence.scan) sur les 2 mesures autour de chaque mot, avant/après. Les suggestions doivent donner une fenêtre tirée du canal Voix (énergie) et non de la carte quand quality est mauvaise.",
+   "experiment": "Rejouer les 3 mots du Verdi (+0,57, +1,0, +0,05 s) avec words_verdict et vérifier que `worse` vaut 0 : 10 lignes de Python sur bend_words + words_verdict, aucune donnée audio nécessaire.",
+   "area_key": "calage",
+   "area": "Calage (alignement partition / enregistrement) et son signal de confiance",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "calage/calage-labels-ui-mensongers",
+   "title": "Les textes montrés pendant le calcul décrivent un pipeline qui ne tourne pas (BS-RoFormer, « deux calages indépendants », « avis isolé écarté »)",
+   "severity": "medium",
+   "category": "wrong",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 135,
+     "quote": "'separate': 'Séparer les voix (BS-RoFormer ; Demucs si besoin)',"
+    },
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 161,
+     "quote": "'separate': 'Une IA (BS-RoFormer) sépare les voix de l’accompagnement ; si elle échoue, une deuxième (Demucs) prend le relais.',"
+    },
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 119,
+     "quote": "SEP_USE = ['Demucs v4']   # 7 Oct bench"
+    },
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 172,
+     "quote": "'fuse': 'Tous ces avis sont combinés : un avis isolé qui contredit les autres est écarté.',"
+    },
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 747,
+     "quote": "use = anchors if full else {k: v for k, v in anchors.items()\n                                        if k in ('beats', 'beats2', 'user') or (k == 'pitch2' and rec.get('voice'))"
+    },
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 204,
+     "quote": "keys = (['prepare', 'separate', 'split'] if spec['mode'] == 'new' else []) + ['coarse', 'beats', 'beats2'] + \\"
+    }
+   ],
+   "detail": "STEPS/INFO sont écrits dans le job.json et relus par l'app (plan, labels). Depuis le 7 oct BS-RoFormer est « NOT sellable » et jamais utilisé par défaut, mais les deux textes le nomment encore comme la première IA. « Deux calages indépendants » est faux (finding check-pas-independant). « Un avis isolé qui contredit les autres est écarté » décrit une fusion Huber à 50 ms sur, en mode rapide, deux détecteurs de temps + les accords basic-pitch — pas la « douzaine d'outils » de la docstring (pYIN, MMS, WhisperX, MFA ne tournent qu'avec `full`, que l'app ne pose jamais). Pour un client, ces phrases sont la seule explication de ce qui se passe : elles sont inexactes.",
+   "what_instead": "Générer STEPS/INFO à partir des constantes réellement en vigueur (SEP_USE, BEATS2, full) et retirer toute affirmation sur l'indépendance ou l'écartement des avis tant que ce n'est pas mesuré. Un test qui vérifie que chaque label cite un outil présent dans `keys`.",
+   "experiment": "",
+   "area_key": "calage",
+   "area": "Calage (alignement partition / enregistrement) et son signal de confiance",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "calage/calage-bar-regular-ecrase-rubato",
+   "title": "bar_regular jette le chemin fin à l'intérieur de chaque mesure : le défaut est réglé pour les pistes d'exercice à pulsation fixe, pas pour un soliste",
+   "severity": "medium",
+   "category": "weak",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/bar_regular.py",
+     "line": 32,
+     "quote": "s['map'] = [[float(q), round(float(np.interp(q, bq, bt)), 3)] for q in mp[:, 0]]"
+    },
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 800,
+     "quote": "spq = np.median(np.diff(ctx['t'])) / 0.5"
+    },
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 108,
+     "quote": "CHAIN = 'v2'"
+    },
+    {
+     "file": "code/tools/align3.py",
+     "line": 800,
+     "quote": "def clock_grid(data, step=0.5):"
+    },
+    {
+     "file": "rapports/calage-v3-2026-09-26.md",
+     "line": 79,
+     "quote": "the beat step does what the regard neuf said on holds and endings (it pulls bars across a held note), but on Léo's real moved bars (learning tracks with a steady beat) it still helps"
+    }
+   ],
+   "detail": "La chaîne v2 (défaut) termine par bar_regular.py qui remplace la carte par une interpolation linéaire entre barres (ou entre temps si la noire dépasse 0,7 s) : toute tenue, respiration ou accélération à l'intérieur d'une mesure est effacée ; seule note_align (étape place, ±0,25 s de prior) peut ensuite déplacer les notes de MA voix. Le rapport du 26 sept montre que la chaîne 'clock' (align3 fin à chaque attaque, sans beats ni régularisation) est meilleure sur points d'orgue et fins (Tier A : 138 → 69 onsets > 0,25 s sur « hold », 106 → 64 sur « end ») mais moins bonne de 6 mesures sur 67 sur les pistes Chord Perfect ; v2 est resté le défaut parce que la vérité est faite de pistes Chord Perfect. Pour un soliste avec rubato (le cas Verdi, et une partie des clients), le défaut est le mauvais choix et personne ne l'a mesuré sur un vrai soliste.",
+   "what_instead": "Choisir la chaîne par pièce selon un indicateur mesuré (variance des durées de temps battus par beat_this : forte → 'clock' + note_align ; faible → v2), ou au minimum ne régulariser que dans les mesures où beats et beats2 sont d'accord. Ajouter `solo_rubato` réaliste au corpus synthétique (tenues en fin de phrase, 1-3 s, et accelerando) et un vrai soliste à la vérité.",
+   "experiment": "Relancer tempo_bench/bench_calage --synth avec chain=clock vs v2 sur un type `solo_rubato` à tenues de phrase (pas la sinusoïde) : une nuit de machine, règle d'acceptation déjà écrite (recette D).",
+   "area_key": "calage",
+   "area": "Calage (alignement partition / enregistrement) et son signal de confiance",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "calage/calage-recaler-passage-prior-mort",
+   "title": "« Recaler ce passage » (recaler.py, 591 lignes) lit une confiance que le pipeline n'écrit jamais : son prior et son look-ahead sont constants",
+   "severity": "medium",
+   "category": "wasted",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/recaler.py",
+     "line": 497,
+     "quote": "'conf': sync.get('confidence') or [],"
+    },
+    {
+     "file": "code/tools/recaler.py",
+     "line": 431,
+     "quote": "c_auto = float(conf[i]) if i < len(conf) else 0.5"
+    },
+    {
+     "file": "code/tools/recaler.py",
+     "line": 513,
+     "quote": "if r + 1 < nb and sung[r] and sung[r + 1] and (conf[r] if r < len(conf) else 0) >= 0.75 and (conf[r + 1] if r + 1 < len(conf) else 0) >= 0.75:"
+    },
+    {
+     "file": "code/tools/recaler.py",
+     "line": 50,
+     "quote": "LOOKAHEAD_BARS = 32"
+    },
+    {
+     "file": "code/app/recaler.js",
+     "line": 233,
+     "quote": "const k = c >= 0.75 ? 'ok' : c >= 0.4 ? 'mid' : 'low'; return `<i class=\"rcDot ${k}\" title=\"mes. ${barName(i)} : ${k === 'ok' ? 'sûr' : k === 'mid' ? 'probable' : 'incertain'}\"></i>`"
+    }
+   ],
+   "detail": "recaler.py annonce « a mild pull towards where the bar is now, as strong as the automatic confidence of the bar » et un look-ahead qui s'arrête « à la prochaine mesure où le chœur chante avec une bonne confiance automatique ». Comme pipeline.py n'écrit jamais `confidence` (il écrit agreement/check), conf = [] : le prior vaut 0,5 pour toutes les mesures et far_anchor ne s'arrête que sur une barre posée à la main ou après 32 mesures. Les points « sûr / probable / incertain » de recaler.js viennent des min-marginales du passage seul (lignes 444-452), ce qui est au moins cohérent, mais la moitié du design documenté est inerte. Je n'ai pas pu vérifier si ce module est encore atteignable depuis l'interface (calplus.js non lu) ; recaler_truth.py le mesure contre le ruler du 26 sept.",
+   "what_instead": "Soit brancher recaler.load_ctx sur l'objet `quality` unique (finding cinq-confiances), soit retirer le prior et le look-ahead « par confiance » du code et de la docstring. Décider si « Recaler ce passage », « Caler avec des mots » et « Caler par phrases » sont trois outils ou un seul : aujourd'hui ce sont trois moteurs (recaler.py DP local, anchors.bend_words, pipeline+anchors) avec trois notions de « sûr ».",
+   "experiment": "",
+   "area_key": "calage",
+   "area": "Calage (alignement partition / enregistrement) et son signal de confiance",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "calage/calage-review-fenetres-mauvais-endroits",
+   "title": "Les trois fenêtres de « Voilà ce que j'ai compris » sont début / milieu / fin de ma voix selon la carte, pas les endroits douteux",
+   "severity": "medium",
+   "category": "weak",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/app/library.js",
+     "line": 1549,
+     "quote": "const first = notes.length ? T(notes[0][0]) : 0, last = notes.length ? T(notes.at(-1)[0] + notes.at(-1)[1]) : dur;"
+    },
+    {
+     "file": "code/app/library.js",
+     "line": 1550,
+     "quote": "const starts = [Math.max(0, first - 1), Math.max(0, (first + last) / 2 - 7.5), Math.max(0, Math.min(dur, last + 1) - 15)];"
+    },
+    {
+     "file": "code/app/library.js",
+     "line": 1445,
+     "quote": "Vérifie-le à l’oreille : trois passages de 15 secondes, une minute en tout."
+    },
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 843,
+     "quote": "sections = []"
+    }
+   ],
+   "detail": "L'écoute de contrôle est le seul vrai signal du projet (une oreille humaine), mais ses fenêtres sont choisies par la carte elle-même : début de ma voix, milieu, et les 15 s avant la fin de ma dernière note telle que la carte la place. Sur le Verdi, « Fin » tombe vers 757-772 s, dans l'Ave Maria comprimé après que la voix s'est tue (12:09) ; l'utilisateur entend l'orchestre et des notes de piano en rafale, et répond « pas tout à fait » — le verdict devient « Calé, quelques endroits à revoir (m. 300-308) », ce qui est faux : tout est à revoir depuis le milieu. Les sections douteuses du pipeline (check.sections) existent et ne sont pas utilisées pour choisir les fenêtres ; 45 s d'écoute ne peuvent pas détecter une dérive progressive. Les réponses ne sont gardées que comme texte `verdict` dans library.json, jamais comme vérité réutilisable.",
+   "what_instead": "Choisir les fenêtres par `quality` : la pire mesure chantée par contraste, la première rentrée du chœur après un solo, et la fin réelle des voix (voice_activity), avec des mots affichés venant des paroles si elles sont lisibles. Si l'utilisateur dit « pas tout à fait » sur une fenêtre, enregistrer (q0, q1, non) comme contrainte pour Caler par phrases, et ne jamais écrire « Calé, quelques endroits » quand 1 fenêtre sur 3 échoue : « À vérifier ».",
+   "experiment": "",
+   "area_key": "calage",
+   "area": "Calage (alignement partition / enregistrement) et son signal de confiance",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "calage/calage-aucun-refus",
+   "title": "Le pipeline ne refuse jamais pour cause de qualité ; les seuls refus du projet concernent la forme des données",
+   "severity": "high",
+   "category": "missing",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 489,
+     "quote": "job.step('coarse', coarse, required=True)"
+    },
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 981,
+     "quote": "if job.state.get('failed'):  # done, but with tools missing: said plainly (the bench refuses to count such a run)"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 417,
+     "quote": "raise ValueError('La partition a changé depuis que tu as posé ces mots, je ne recale pas ('"
+    },
+    {
+     "file": "code/tools/align3.py",
+     "line": 660,
+     "quote": "# a plan the score does not write (verses: the whole piece 2x / 3x) must fit clearly better"
+    },
+    {
+     "file": "code/tools/raccourcir_piece.py",
+     "line": 4,
+     "quote": "his recording only the first. … he clicks the last page he keeps, then the last line (system) on it. Never a bar number to type."
+    }
+   ],
+   "detail": "Un job finit 'done' sauf si une étape `required` lève (prepare, separate, coarse, fuse, regular, clock) ; une étape ratée (notes, check, place) laisse 'done' avec une liste `failed` que l'app n'exploite pas comme refus. align3 renvoie toujours un plan (le meilleur coût, même absurde). Les seuls « je ne recale pas » du projet (anchors.check_words, check_sure) portent sur une partition modifiée, et Raccourcir demande à l'utilisateur de cliquer la dernière ligne lui-même — l'app ne détecte pas où l'enregistrement s'arrête. Pour un produit vendu à des débutants, l'absence de refus signifie que chaque mauvais fichier (mauvaise pièce, mauvaise édition, enregistrement tronqué, partition OMR fausse) produit un calage « calé ».",
+   "what_instead": "Trois conditions de refus dans pipeline.check, écrites dans quality.refuse avec une phrase en français : (1) couverture : voix détectées hors de [t(q_first_sung) − 20 s, t(q_last_sung) + 20 s] ou partition chantée au-delà de la dernière voix de plus de 20 s ; (2) tempo : > 20 % des mesures chantées à moins de 35 % ou plus de 300 % de la durée médiane ; (3) contraste : suite de ≥ 8 mesures chantées sans contraste (confidence.scan recalibré). Refuser = ne pas écrire le sync comme courant (le garder en .candidate), ne pas dire « calé », proposer : « ce n'est pas la bonne pièce / l'enregistrement s'arrête avant la fin / caler par phrases ».",
+   "experiment": "Appliquer les trois règles hors ligne aux 12 syncs du banc + Verdi + Mozart (données déjà sur le Mac) : les 12 doivent passer, le Verdi doit échouer sur (1) et (2). Un script d'une heure, sans relancer le pipeline.",
+   "area_key": "calage",
+   "area": "Calage (alignement partition / enregistrement) et son signal de confiance",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "calage/calage-histoire-trop-gentille",
+   "title": "Où 01-HISTOIRE-ET-ETAT.md et RESULTATS.md sont trop gentils",
+   "severity": "medium",
+   "category": "oversold",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "01-HISTOIRE-ET-ETAT.md",
+     "line": 102,
+     "quote": "Truth = Léo's hand alignment of his own voice in 12 pieces (Nelson 1–11 and Loch), 2,099 notes."
+    },
+    {
+     "file": "01-HISTOIRE-ET-ETAT.md",
+     "line": 113,
+     "quote": "a local confidence tool (`code/tools/confidence.py`), and nothing warned him"
+    },
+    {
+     "file": "rapports/calage-verite-2026-10-07/RESULTATS.md",
+     "line": 9,
+     "quote": "La vérité forte = les débuts des notes de ta voix (2 099 notes)."
+    },
+    {
+     "file": "code/tools/bench_calage.py",
+     "line": 135,
+     "quote": "'t': round(float(interp(f['q'] if f else q, tmap)), 4), 'fixed': bool(f)})"
+    }
+   ],
+   "detail": "« 2 099 notes de vérité » : la vérité humaine porte sur les notes avec `fix` (18 sur le Verdi par exemple ; le nombre par pièce du banc n'est pas publié), le reste est la carte machine. Dire « vérité forte = les 2 099 notes » est une surenchère. « A local confidence tool … nothing warned him » laisse croire qu'un outil existait et a échoué ; il était éteint et jamais appelé par l'app. À l'inverse, l'histoire est honnête sur le Verdi lui-même (ligne 113) et sur la panne basic-pitch (109) ; c'est sur la qualité de la preuve qu'elle enjolive.",
+   "what_instead": "Corriger les deux phrases : « vérité = N notes corrigées par Léo (liste par pièce) ; les autres notes mesurent l'accord avec le calage précédent » ; « l'outil confidence.py n'est pas activé dans le produit ».",
+   "experiment": "",
+   "area_key": "calage",
+   "area": "Calage (alignement partition / enregistrement) et son signal de confiance",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "calage/calage-options-recherche-dans-le-produit",
+   "title": "Le pipeline livré est un banc de recherche : une vingtaine d'options de job et de drapeaux morts, état global muté, code en double",
+   "severity": "low",
+   "category": "weak",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 728,
+     "quote": "fusion.WEIGHTS.update({'beats2': 1.0, 'beats3': 0.8, 'pitch2': 1.5, 'lyrics2': 0.5, 'lyrics3': 0.5, 'user': 30.0})"
+    },
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 1043,
+     "quote": "fusion.WEIGHTS.update({'pitch2': 1.5})"
+    },
+    {
+     "file": "code/tools/pipeline.py",
+     "line": 111,
+     "quote": "VOICE_PULL = False   # clock chain: my voice's sung line corrects the clock when my voice is in front (rec.voice)"
+    },
+    {
+     "file": "code/tools/anchors.py",
+     "line": 52,
+     "quote": "SOFT = False   # calage v3 (26 Sept 2026): snap + soft repères"
+    },
+    {
+     "file": "code/tools/consensus.py",
+     "line": 1,
+     "quote": "Consensus sync: several independent methods vote on when each beat is sung."
+    },
+    {
+     "file": "code/tools/fusion.py",
+     "line": 218,
+     "quote": "sync['check'], sync['check_idx'], sync['confidence'], sync['sources'] = check, check_idx, conf, counts"
+    }
+   ],
+   "detail": "Options de spec : chain, pitch, fermata, shift_scan, voice_pull, soft_anchors, snap_anchors, beats, even_bars, beat_gate, entry_anchors, tempo_free, chunk_s, a3_feats, separators, sep_fp16, full, light, f0_file, no_store, unfold, vad_anchor, notes_fine, fuse_notes, aligner — presque toutes « non retenues » par un rapport. fusion.WEIGHTS est un dictionnaire de module muté à deux endroits. consensus.py, align2.py (secours), fusion.main, align_beats.align sont des chemins parallèles qui écrivent d'autres champs (confidence, check_idx) dans le même format de sync. Ce n'est pas un bug de calage, c'est la raison pour laquelle personne ne sait plus quel champ veut dire quoi (finding cinq-confiances).",
+   "what_instead": "Geler une chaîne produit (pipeline_product.py : prepare, separate Demucs, align3, beats×2, notes, fuse, regular ou clock selon l'indicateur de rubato, check=quality, roll) sans spec optionnelle ; laisser les options dans un pipeline_bench.py qui l'importe. Supprimer consensus.py, fusion.main, align_beats.align.",
+   "experiment": "",
+   "area_key": "calage",
+   "area": "Calage (alignement partition / enregistrement) et son signal de confiance",
+   "severity_original": "low",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  }
+ ],
+ "refuted": [],
+ "answers": []
+}

@@ -1,0 +1,5 @@
+files=5 areas=5 findings=82 refuted=0 answers=4
+status={'confirmed': 11, 'unverified': 71}
+severity={'critical': 9, 'high': 30, 'medium': 35, 'low': 8}
+areas: calage, data, lead, phrases, tests
+questions: 1, 2, 7, 8

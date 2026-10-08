@@ -1,0 +1,1731 @@
+{
+ "name": "wf_c6cdd0f8-12c",
+ "areas": [
+  {
+   "area_key": "tests",
+   "area": "Honnêteté des tests (code/tools/tests/, run_checks.py, simplicity_report.py, les lignes « headless, 0 erreur » du HANDOFF, les recettes)",
+   "summary": "État honnête : il y a 61 fichiers dans code/tools/tests/ (plus 2 fixtures), soit ≈ 1 700 assertions par comptage mécanique, mais ce volume ne mesure presque jamais ce que le produit doit faire pour un client. Neuf fichiers (calage_truth, calage_warp, calage_anchors_test, calage_confidence_test, recaler_truth, sanspartition_truth, choir_timed_check, copier_mesure, run_checks) ont zéro assertion : ce sont des bancs qui impriment des chiffres, sans seuil ni code de sortie, et ils ont tourné quatre jours avec une étape en panne sans que rien ne crie [verified, bench_garde_test.py:1-5]. Trente-deux fichiers sur 61 lisent Pupitre-data, pieces.js, des fixtures absentes du zip (calage_truth_frozen.json, loch_words/, v1_nelson10_libre.pupitre, relire-lecture/fixture, testset/44-nelson-07/truth.mxl), de l'audio acheté ou le serveur de Léo : rien de cela n'est exécutable sur une autre machine, il n'y a ni requirements ni CI, et trois runners dépendent de jsc (macOS) et de ~/Library/Caches/ChromeForTesting/mac_arm. Les gros chiffres cités comme preuve (« 548/548 », « pkg 1490 ok ») sont des produits « assertions × pièces de Léo × audiences » : score_edits_test compare la table de refs construite par score-edits.js avec elle-même sur 13 partitions de Léo, pupitre_pkg_test réimporte ce que le même code vient d'exporter. Les « 0 erreur JS en headless » (129 lignes du HANDOFF, 0 ligne « Léo a vu/écouté/validé ») prouvent qu'un script n'a pas levé d'exception non attrapée pendant que chaque POST recevait `{}` 200 ou était rejeté, que la lecture audio était interdite et que personne ne regardait l'écran. Aucune référence attendue du zip n'a été validée par un humain : les refs de calage Bach/Mozart sont « made by eye (Claude) … started from the new aligner coarse result », la référence Verdi « 29/29 » est « made by Claude … NOT checked by Léo » et le hold-out filtre par code (`page <= 14`) l'unique mesure à triolet ; la seule vérité humaine est le calage à la main de Léo (12 pièces, une voix), exclue du zip. Aucun test ne touche le verdict « Bien calé / Calé » de library.js, qui repose sur trois fenêtres de 15 s et sur within50, un indicateur dont calage_truth.py dit lui-même qu'il « cannot tell right from wrong » ; l'échec Verdi (54 mesures écrasées dans 94 s, affiché « Calé ») passerait tous les tests. Aucun test ne compte les syllabes après la réparation de structure : decide() ne garde que les notes (KEEP_NOTES), structure_test vérifie « no note lost » mais jamais « no syllable lost », et le rapport présente « 507 syllabes sur 1 ligne » comme un gain alors que Voix 2 est sortie avec 13 paroles pour 328 notes.\n\nTABLE (fichier | ce qu'il teste | assertions (compte mécanique) | données hors zip ? | référence écrite par le même agent ? | attraperait le « Calé » du Verdi ? | attraperait des paroles en vrac ?) :\naccomp_test.mjs | arrange() du pianiste sur pièce jouet puis pièces de Léo | 56 | oui (Pupitre-data) | oui | non | non\nai_package_test.py | paquet pour l'IA, complete(), refus | 44 | oui (testset truth.mxl) | oui (faux modèle = vérité) | non | partiel (validateur du texte IA)\nai_read_test.py | format compact, validateur, boucle de correction avec faux modèle, clé/offline | 81 | oui (testset) | oui | non | partiel\naimant_test.mjs | aimant entre voix (jouet) | 19 | non | oui | non | non\nanchors_far_words_test.py | bend_words, fixture synthétique 4 phrases | 19 | non | oui (seuil 0,75 s « pas écouté ») | non | non\nanchors_local_test.py | local_merge cartes jouets | 14 | non | oui | non | non\nanchors_words_test.py | Loch 11 mots | 34 | oui (fixtures/loch_words ABSENT) | oui (vérité = hauteur machine) | non | non\napp_flow_pre/post.js | scénario Corriger la partition (via jsc) | 23 | oui (data/loch.json) | oui | non | non\nautrevoix_test.mjs | précalage d'une autre voix | 36 | oui | oui | non | non\nbarres_test.mjs | barres posées/élastique | 30 | non | oui | non | non\nbench_garde_test.py | le banc refuse un run avec étape en échec | 11 | non | oui | non | non\ncalage_anchors_test.py | banc repères bruités | 0 | oui (frozen absent, audio) | Léo (hors zip) | non | non\ncalage_confidence_test.py | banc rappel des drapeaux | 0 | oui | Léo | non | non\ncalage_truth.py | la règle (banc) | 0 | oui | Léo + « by-eye Claude » | non | non\ncalage_v2_test.py | anchors/unfold/note_align jouets + pièces de Léo | 26 | oui (partiel) | oui | non | non\ncalage_warp.py | banc sans vérité (équivariance) | 0 | oui (audio, rubberband) | aucune (bonne idée) | partiellement si seuil | non\ncaler_mots_test.mjs | libellés/chips reperes-core | 82 | partiel | oui | non | non\nchoir_timed_check.py | mesures objectives d'un rendu | 0 (script) | oui | — | non | non\ncopier_mesure.mjs | banc décalage sur enregistrements achetés | 0 | oui | Léo | non | non\ndecalage_test.mjs | offset sur sons synthétiques | 14 | non | oui | non | non\neditor_test.mjs | parties pures de editor.js (jsc) | 51 | jsc | oui | non | partiel (ligne↔syllabes)\nfiche_test.mjs | validation fiche JSON | 14 | oui (fiches) | oui | non | non\nfindnote_test.mjs | verdict juste/haut/bas, pièces intégrées | 34 | oui | oui | non | non\ngroupe_calage_headless.mjs | CDP multi-sélection sur serveur vivant | 35 | oui (serveur 8766, Chrome mac_arm) | oui | non | non\ngroupe_test.mjs | pushGroup/elasticMany | 29 | non | oui | non | non\nia_accomp_test.py | export/réponse accompagnement sur Mozart | 15 | oui | oui | non | non\nia_review_test.py | paquet .ia.pupitre sur Mozart | 30 | oui | oui | non | non\niareview_test.mjs | contrôle strict de la réponse IA | 62 | non | oui | non | partiel\nimages_bord_test.mjs | edgeHere | 17 | non | oui | non | non\nimport_test.py | group_for, split_shared, name_lines, flatten_photo synthétique | 15 | non | oui | non | 1 assertion (paroles à la voix basse)\njonction_ici_test.mjs | joinAt/startAt | 39 | non | oui | non | non\njouer_test.mjs | takeSteps/placeTake | 21 | non | oui | non | non\nmix_export_test.py | rendu sinus, Fauré optionnel | 46 | optionnel | oui | non | non\nmixer_voix_test.mjs | curseurs des voix | 26 | oui | oui | non | non\nomr_cache_test.py | clé de cache avec fakes | 14 | non (tmp) | oui | non | non\nomr_pages_test.py | fix_clefs/merge_pages synthétiques | 12 | non | oui | non | non\nparoles_test.mjs | syllabation | 23 | non | oui | non | partiel (découpe seulement)\npeindre_test.py | API pochette + faux mini-IA | 75 | non | oui | non | non\npianiste_fausses_notes_test.mjs | sur pièces de Léo | 28 | oui | oui | non | non\npianiste_jeu_test.mjs | formules Pianiste | 15 | oui | oui | non | non\npianiste_page_test.mjs | smoke page avec faux DOM (jsc) | 19 | oui, jsc | oui | non | non\npianiste_test.mjs | harmonie (jsc) | 27 | oui, jsc | oui | non | non\nprogress_test.mjs | barre de progrès | 15 | non | oui | non | non\npupitre_pkg_test.py | export/import bac à sable, droits, HTTP | 116 × pièces × audiences ≈ 1490 | oui (toutes pièces + audio acheté, .venv) | oui (aller-retour du même code) | non | non (octets identiques seulement)\nraccourcir_test.py | couper XML/notes, risques, apply/undo (avec fakes) | 77 | non (tmp) | oui | non | non\nrecaler_test.mjs | recaler parties pures | 32 | non | oui | non | non\nrecaler_truth.py | banc | 0 | oui | Léo | non | non\nrecvoice_test.mjs | enregistrements selon Ma voix | 35 | oui (PIECES) | oui | non | non\nrelire_lecture_test.mjs | relire-core | 58 | oui (fixture ABSENTE) | oui | non | non\nrun_app_flow_test.py | runner jsc, découpe app.js par chaînes | 0 | jsc | — | non | non\nrun_bugs_test.py | store/toast/loadRecordingOr + grep de editor.js | 12 | non | oui | non | non\nrun_score_edits_test.py | runner jsc sur partitions de Léo | 0 | oui, jsc | — | non | non\nsanspartition_truth.py | banc | 0 | oui | Léo | non | non\nscore_edits_test.mjs | couverture refs + corrections + rekey | 73 × 13 pièces ≈ 548 | oui | oui (le code contre lui-même) | non | partiel (syllabe éditée)\nstructure_test.py | langue, genre, page dessinée, repair jouet, risques | 73 | non | oui | non | NON (notes seulement)\nuserdata_test.mjs | couche de synchro, faux serveur 409/offline | 49 assert.* | non | oui | non | non\nvideo_test.py | offset vidéo avec ffmpeg synthétique | 8 | non (ffmpeg) | oui | non | non\nvitesse_test.py | page_count, parallèle, log, grep de pipeline.py | 15 | non | oui | non | non\nvoices_test.mjs | pièces intégrées, portées | 31 | oui | oui | non | non\nvoicetest_test.mjs | chanteurs synthétiques | 30 | non | oui (chanteurs dessinés sur le modèle du classifieur) | non | non\nfixtures/calage_refs/{bach,mozart}.json | références « à l'œil » | — | — | Claude, parties de la sortie de l'aligneur | — | —\nTautologiques ou quasi : score_edits_test §1 (refs du code vs le même code), pupitre_pkg round-trip compté 1490, run_bugs_test.py:89 et vitesse_test.py:128-132 (grep du source), accomp_test.mjs:74 (ancien réglage == sortie actuelle), anchors_words_test.py:93 (assert que l'ancien moteur était pire), calage_v2_test.py:67 (pièces de Léo jamais dépliées), score_edits_test.mjs:60 (`|| ids >= C.xn`), raccourcir_test.py:209-210 (le test enlève un champ pour que l'égalité passe).",
+   "good": [
+    {
+     "what": "pupitre_pkg_test.py : bac à sable réel, hook d'audit qui liste toute écriture hors du bac (sys.addaudithook), jumeaux réels vérifiés après coup, et surtout un mode --mutant qui prouve que les contrôles de droits mordent. C'est la seule suite du projet qui se vérifie elle-même.",
+     "evidence": "code/tools/tests/pupitre_pkg_test.py:254-281 (_audit), :29 et :538 (`api.audio_allowed = lambda *x: True` sous --mutant), :951-983 (rien écrit dehors)",
+     "tag": "verified"
+    },
+    {
+     "what": "Les recettes figées AVANT de mesurer, avec entraînement / contrôle à l'aveugle et règle d'acceptation écrite d'avance. C'est la bonne discipline, même si elle n'est pas encore appliquée aux tests du code.",
+     "evidence": "rapports/calage-verite-2026-10-07/RECETTE-AB.md:1-6 (« Recette figée AVANT de mesurer », contrôle N5/N7/N9/N11), rapports/licences-2026-10-07/RECETTE.md:1 (« rien ne sera réajusté ensuite »)",
+     "tag": "verified"
+    },
+    {
+     "what": "calage_warp.py : l'idée d'un test SANS vérité (align(W(x)) = W(align(x)) après intro / tenue / tempo / coupure / fin) est la meilleure idée de mesure du projet ; il lui manque juste un seuil et un code de sortie.",
+     "evidence": "code/tools/tests/calage_warp.py:1-14 (« a test that needs NO truth »), :224-255 (errors par région)",
+     "tag": "verified"
+    },
+    {
+     "what": "bench_garde_test.py + Job.step : après quatre jours de banc avec basic-pitch en panne silencieuse, une étape en échec est maintenant nommée et le banc refuse de compter le run. À garder et à généraliser à toutes les étapes.",
+     "evidence": "code/tools/tests/bench_garde_test.py:45-53, :68-84 ; code/claude/HANDOFF.md:518",
+     "tag": "verified"
+    },
+    {
+     "what": "raccourcir_test.py : contrôles au byte près (« every bar kept is the same bytes »), undo qui rend les mêmes octets, « nothing deleted », cut du début jamais en place. C'est le bon niveau d'exigence pour la sécurité des données, même si create_piece/run_cli sont factices.",
+     "evidence": "code/tools/tests/raccourcir_test.py:72-73, :181, :212-213, :249",
+     "tag": "verified"
+    },
+    {
+     "what": "peindre_test.py et userdata_test.mjs : les cas de panne sont testés pour de vrai (petite IA absente / lente / charabia / vide ; serveur 409, hors ligne, navigateur réinitialisé) avec un faux serveur HTTP local, pas avec des mocks de fonctions.",
+     "evidence": "code/tools/tests/peindre_test.py:186-195, :251-253, :280-284 ; code/tools/tests/userdata_test.mjs:91-118, :151-156",
+     "tag": "verified"
+    },
+    {
+     "what": "ai_read_test.py KeyAndNetwork : la clé n'est jamais renvoyée, fichier en 0o600, l'erreur hors ligne ne contient pas la clé, l'adresse .invalid garantit qu'aucune requête ne part.",
+     "evidence": "code/tools/tests/ai_read_test.py:472-505",
+     "tag": "verified"
+    }
+   ],
+   "answers": [
+    {
+     "question": "Que prouvent réellement les 64 entrées de code/tools/tests/ ?",
+     "answer": "Elles prouvent que les fonctions pures (découpe de syllabes, courbes élastiques, formats de paquet, validateurs JSON, cache OMR, API pochette) font ce que leur auteur a codé, sur des données jouets ou sur les 15 pièces de Léo, et que rien ne plante dans ces chemins. Neuf fichiers n'ont aucune assertion (bancs qui impriment). Les grands comptes (548, 1490) sont des assertions répétées par pièce et par audience. Aucun test ne prouve qu'un client voit une partition juste, entend un calage juste, ou lit le bon mot « Calé » ; aucun test ne peut tourner hors du Mac de Léo (fixtures et données absentes, jsc, Chrome mac_arm). [verified]"
+    },
+    {
+     "question": "Que prouvent les lignes « headless check, 0 JS errors » du HANDOFF ?",
+     "answer": "Qu'un script CDP a chargé la page dans chrome-headless-shell, exécuté quelques clics, et qu'aucune exception non attrapée ni console.error n'est apparue pendant que chaque POST/PUT était remplacé par `{}` 200 (simplicity_report.py:90) ou rejeté (groupe_calage_headless.mjs:64,78), que play() était interdit (:73) et que personne ne regardait. Cela ne prouve pas : que l'écran est lisible, que le son joue, que le calage suit, que la sauvegarde marche, qu'un `catch` n'avale pas une erreur. 129 lignes « 0 erreur » contre 0 ligne « Léo a vu/écouté ». [verified]"
+    },
+    {
+     "question": "Tests comptés comme preuve (548/0) alors qu'ils testent l'accord du code avec lui-même ?",
+     "answer": "Oui : score_edits_test.mjs §1 compare les refs produites par buildScoreModel au modèle produit par le même appel (:16-30) ; §2/§4 appliquent puis relisent ce qu'on vient d'appliquer. Le 548 = ≈73 assertions × 13 partitions de Léo. pupitre_pkg_test « 1490 » = ≈20 contrôles de manifeste × 15 pièces × 3 audiences + réimport de ce que le même code a exporté. Autres tautologies : run_bugs_test.py:89 et vitesse_test.py:128-132 (grep du source), accomp_test.mjs:74 (ancien réglage == sortie actuelle), anchors_words_test.py:93 (l'ancien moteur était pire), score_edits_test.mjs:60 (`|| ids >= C.xn`). [verified]"
+    },
+    {
+     "question": "Lesquels sont tautologiques ?",
+     "answer": "score_edits_test §1 (couverture interne), pupitre_pkg_test round-trip tel que compté, run_bugs_test.py:89 (chaînes dans editor.js), vitesse_test.py:128-132 (chaînes dans pipeline.py), accomp_test.mjs:74, anchors_words_test.py:93, calage_v2_test.py:67 (règle sur les pièces de Léo), score_edits_test.mjs:60, raccourcir_test.py:209-210 (champ supprimé pour l'égalité), voicetest_test.mjs (chanteurs synthétiques construits sur le modèle du classifieur). Les tests IA (ai_read_test, ai_package_test) ne sont pas tautologiques mais leur oracle est la vérité donnée au faux modèle. [verified]"
+    },
+    {
+     "question": "Y a-t-il UN test avec une sortie attendue validée par un humain, autre que les 12 calages à la main de Léo ?",
+     "answer": "Dans le zip : non. calage_refs/bach.json et mozart.json sont « made by eye (Claude) … started from the new aligner coarse result » (:58, :88). La référence Verdi est « made by Claude … NOT checked by Léo » (ref.py:1, holdout.py:4). La « truth » d'anchors_words est une mesure machine (:9). Les truth.mxl du testset ne sont pas livrés et aucun document ne dit qui les a relus. Hors zip, les 13 « partitions finales » que Léo chante sont la seule chose exposée à une oreille humaine, mais elles ne sont pas déclarées comme oracle de test. [verified]"
+    },
+    {
+     "question": "Un test attraperait-il l'échec « Calé » du Verdi ?",
+     "answer": "Non. Aucun fichier de tests/ ne mentionne « Calé » ; le verdict est fabriqué dans library.js:1520-1533 et :1618 à partir de within50 et de trois fenêtres de 15 s jugées à l'oreille. within50 est déclaré inapte par calage_truth.py:3-4. Aucun test ne construit une carte où la fin de la partition est écrasée dans les dernières secondes. calage_warp.py pourrait voir un tel écrasement (région « end ») mais il n'a ni seuil ni code de sortie et exige l'audio. [verified]"
+    },
+    {
+     "question": "Un test attraperait-il des paroles en vrac ou perdues ?",
+     "answer": "Non. decide() de structure.py ne garde que les notes (KEEP_NOTES, :518) ; lyrics_dropped est compté (:853) mais ne bloque pas ; structure_test.py vérifie « no note lost » (:181, :222) et jamais les syllabes par partie ; le seul contrôle de paroles (:164) porte sur 4 mesures jouets. Le rapport a présenté « 507 syllabes sur 1 ligne » comme un gain alors que Voix 2 est sortie avec 13 paroles pour 328 notes [verified]. paroles_test.mjs et editor_test.mjs testent la découpe de syllabes, pas leur survie à la lecture. [verified]"
+    },
+    {
+     "question": "Que prouve et ne prouve pas un « headless run with server writes blocked » ?",
+     "answer": "Il prouve : la page se charge, les modules s'importent, les clics scriptés ne lèvent pas d'exception, et (bonus) qu'aucun test n'a modifié les fichiers de Léo. Il ne prouve pas : la sauvegarde (jamais exercée, le serveur répond `{}`), la relecture après sauvegarde, le son, le rendu visuel, la compréhension par un humain, ni les erreurs attrapées en silence. Il ne prouve pas non plus la portabilité : chrome-headless-shell est cherché sous ~/Library/Caches avec un filtre mac_arm (groupe_calage_headless.mjs:10-12, simplicity_report.py:50). [verified]"
+    },
+    {
+     "question": "Quelle couche de tests honnête minimale imposer ?",
+     "answer": "(1) Fichiers d'or publics dans fixtures/ : Verdi 3 pages (déjà dans le zip), Mozart, Bach ; sorties attendues relues par Léo avec la Loupe (30 mesures Verdi : notes + syllabes par partie) ; structure_test et un nouveau lecture_or_test comparent notes ET syllabes par partie, échec si une voix chantée perd > 3 % de syllabes ; decide() gate sur les syllabes. (2) Calage sans vérité : calage_warp.py avec seuil (> 0,25 s sur > 5 % des attaques = échec) et un calage_sanity_test sur cartes synthétiques (fin écrasée, tempo divisé par 5) qui doit interdire « Calé ». (3) Diff visuel : 6 captures (premier, principal, panneau, Calage, Chanter, classeur) × 1440/760 × clair/nuit, comparées pixel à pixel à des références versionnées ; > 0,5 % de pixels changés = échec sauf mise à jour explicite. (4) Une écoute humaine par version : script de 90 s (3 pièces × 30 s, ma ligne + enregistrement, la ligne rouge suit ?), feuille oui/non signée dans rapports/ecoute-humaine/<date>.md ; sans ce fichier, le HANDOFF n'a pas le droit d'écrire « vérifié ». (5) Checklist d'acceptation sur machine vierge (et une VM Windows) : installer le build, importer un PDF et un MP3, voir le verdict, boucler, ralentir, exporter, fermer/rouvrir, travail intact ; exécutée par quelqu'un d'autre que Léo. (6) Exécutable partout : tools/tests/unit/ sans Pupitre-data, node seulement, requirements.txt gelé, run_all.py qui sort 1, CI ubuntu+windows ; zéro test rouge « connu ». (7) Garder --mutant (pupitre_pkg_test) et en ajouter un pour raccourcir/structure (une mutation « remplacer en place malgré le risque » doit faire rougir)."
+    }
+   ],
+   "not_read": [
+    "Les corps complets de 20 fichiers .mjs (accomp, aimant, autrevoix, barres, caler_mots, decalage, editor, fiche, findnote, groupe, iareview, images_bord, jonction_ici, jouer, mixer_voix, paroles, pianiste_fausses_notes, pianiste_jeu, pianiste_page, pianiste, progress, recaler, recvoice, relire_lecture) : lus en en-tête, premières dizaines de lignes et par comptage mécanique (assertions, dépendances), pas ligne à ligne.",
+    "code/tools/api_library.py (≈ 4 000 lignes ?) : seulement grep ciblés (within50, lyrics, structure-check).",
+    "code/tools/pipeline.py, align3.py, anchors.py, confidence.py, bench_calage.py : non lus ; mes conclusions sur within50 et le verdict reposent sur library.js, app.js et calage_truth.py.",
+    "rapports/verdi-lecture-parfaite-2026-10-08/ecoute/*.py autres que e3b_regle2.py (en-tête), et scripts/combine.py, score.py, ref.py au-delà de l'en-tête.",
+    "Les fixtures absentes du zip (calage_truth_frozen.json, calage_bench.json, loch_words/, v1_nelson10_libre.pupitre, testset/*/truth.mxl, relire-lecture/fixture) : je ne peux pas vérifier leur gel ni qui les a écrites.",
+    "Le HANDOFF au-delà des lignes citées (grep + 10 lignes lues en entier) ; CONTEXTE-COMPLET.md non lu.",
+    "Les rapports regard-neuf/*, audit-2026-10-06, simplicite, calage-v3 : non lus, sauf grep."
+   ],
+   "need_to_go_further": [
+    "Le dépôt git et versions/ : pour vérifier quand chaque test a été vert/rouge, et si les plafonds des bancs ont reculé entre versions (impossible avec un seul instantané).",
+    "Les fixtures hors zip (calage_truth_frozen.json, calage_bench.json, loch_words/, testset truth.mxl) ou au moins leurs en-têtes et dates, pour savoir qui a écrit chaque vérité et si elle a été regelée.",
+    "Une machine Linux et une VM Windows pour lancer les 61 fichiers et compter ceux qui s'exécutent (mon estimation : < 25).",
+    "Une session avec Léo et la Loupe : 30 mesures Verdi (image + transcription) et 20 barres Mozart tapées à l'oreille, pour fabriquer la première référence humaine publique.",
+    "Les sorties brutes des runs headless (JSON de simplicity_report, logs CDP) de 3 versions récentes, pour mesurer combien de `catch` silencieux ou de promesses rejetées passent sous « 0 erreur ».",
+    "L'accès au serveur local avec une pièce de bibliothèque (pas de pieces.js) pour exercer les chemins qu'un client empruntera."
+   ]
+  },
+  {
+   "area_key": "data",
+   "area": "Sécurité des données (corrections, partitions corrigées, versions, corbeille, « remplacer ou copier »)",
+   "summary": "L'état honnête : le cœur est solide sur le papier et dans le code pour UN utilisateur, UNE fenêtre, UN serveur. Les corrections du Calage et les documents du store sont écrits en tmp + os.replace sous verrou, chaque version précédente part dans history/, le conflit entre deux fenêtres est détecté (409) pour les corrections et les réglages, et score-edits.js fait vraiment suivre les corrections de notes (« notes perdues ») avec des tests qui testent quelque chose. Mais la promesse « rien n'est jamais effacé » est fausse à plusieurs endroits : l'historique des corrections est tronqué à 1000, « Retirer » un enregistrement ajouté déplace ses fichiers dans removed/ sans retour possible depuis l'app, et les corrections de partition (score_edits) sont écrites en « dernier écrivain gagne » sans fusion, contrairement à ce que DONNEES.md affirme. Il n'existe aucune copie hors du Mac, et la seule sauvegarde que l'utilisateur peut faire lui-même (« Sauvegarder » = export .pupitre) oublie tout store/reglages : retouches du piano, notes ≠, boucles, mix, transposition. « Une portée par voix » en mode replace est choisi d'office quand « sûr », mais « sûr » ne regarde ni les réglages par pièce (clés de voix et de notes de l'ancienne partition) ni, au retour arrière, les corrections de Calage faites depuis. Les identifiants de pièce dérivent du titre OCR (« suspended-in-front-of-a-statue-of-the-vi »), sont tronqués à 40 caractères et nomment tous les fichiers de l'utilisateur à vie. Les prises de « Chanter » et de « Mes prises » vivent dans IndexedDB du navigateur seulement : un autre port, un profil vidé, et elles n'existent plus. Enfin le zip lui-même contredit le récit : library.json montre le Verdi « une portée par voix » sur sa partition entière, sans beforeRaccourcir, alors que 01-HISTOIRE dit que le raccourci a été appliqué.",
+   "good": [
+    {
+     "what": "L'écriture du store et des corrections : JSON validé avant écriture, copie dans history/ avant remplacement, fichier temporaire unique puis os.replace, sous store_lock ; X-Base-Rev / X-Base-Saved → 409 avec le fichier courant renvoyé.",
+     "evidence": "code/tools/serve.py:151-202 (store_write), :713-748 (_save_corrections_locked), :289-294 (write_json)",
+     "tag": "verified"
+    },
+    {
+     "what": "Le garde-fou d'empreinte des corrections : un fichier de corrections fait pour un autre nombre de mesures n'est jamais écrasé, et l'état « ! pas sur le disque » est dit honnêtement.",
+     "evidence": "code/app/app.js:4949-4953 (« never overwrite that file »), :4998-5003",
+     "tag": "verified"
+    },
+    {
+     "what": "Le conflit entre deux fenêtres sur le même calage : 409, choix « Prendre celui-là / Garder le mien », BroadcastChannel entre onglets, le perdant reste dans l'Historique.",
+     "evidence": "code/app/app.js:4884-4931, :4985-4991 ; code/tools/serve.py:732-735",
+     "tag": "verified"
+    },
+    {
+     "what": "score-edits.js rekeyEdit / followCorrections : une correction de Calage dont la note change de hauteur est renommée, celle qui ne peut pas suivre va dans « notes perdues » et revient d'elle-même ; testé avec de vrais cas (silence, collision, recoller, annuler).",
+     "evidence": "code/app/score-edits.js:761-828 ; code/tools/tests/score_edits_test.mjs:140-229",
+     "tag": "verified"
+    },
+    {
+     "what": "raccourcir_piece.py : coupe en texte (mêmes octets pour chaque mesure gardée), essai à blanc, refus en place dès qu'une correction ou un calage dépasse la coupe, et nettoyage vers removed/ si la piste d'exercice échoue avant toute modification de la pièce. Le test couvre replace / undo / copy avec des assertions réelles sur les octets.",
+     "evidence": "code/tools/raccourcir_piece.py:130-157, :180-228, :540-547 ; code/tools/tests/raccourcir_test.py:175-213",
+     "tag": "verified"
+    },
+    {
+     "what": "structure_piece.check() construit les nouvelles notes dans un bac à sable (PUPITRE_DATA pointé sur cache/structure/<pièce>/sandbox) : rien de la pièce n'est touché avant apply.",
+     "evidence": "code/tools/structure_piece.py:637-648",
+     "tag": "verified"
+    },
+    {
+     "what": "userdata.js : fusion par clé horodatée avec pierres tombales, 409 → fusion → nouvel envoi, hors-ligne → dirty et réessai, testé contre un faux serveur en Node.",
+     "evidence": "code/app/userdata.js:79-89, :161-212 ; code/tools/tests/userdata_test.mjs:70-134",
+     "tag": "verified"
+    },
+    {
+     "what": "Les open() texte des outils de données passent tous par encoding='utf-8' (le point cp1252/Windows de la revue du 1er octobre a été corrigé).",
+     "evidence": "grep sur serve.py, api_library.py, pipeline.py, anchors.py, structure_piece.py, raccourcir_piece.py, versions.py, unfold_piece.py : 0 open() texte sans encoding ; rapports/revue-code-2026-10-01/REVUE.md:64 pour le constat d'origine",
+     "tag": "verified"
+    }
+   ],
+   "answers": [
+    {
+     "question": "Énumérer chaque chemin de code qui écrase ou efface un fichier écrit par l'utilisateur (corrections, score_edits, library.json, notes, cartes de calage) et dire si l'historique est gardé",
+     "answer": "[verified] corrections/<sync>.json : PUT /corrections (serve.py:701-750) — copie history/ avant, atomique, 409 X-Base-Saved, MAIS historique tronqué à 1000 (742-744) ; réécrit aussi par followOther (app.js:8014, sans X-Base-Saved, copie history/ par le serveur) ; versions.py restore --corrections (131-145) les écrase après une version automatique, sans copie history/. store/score_edits/<id>.json : PUT /store (serve.py:379-391 → store_write) — history/ gardé, atomique, mais pas de X-Base-Rev depuis app.js:7925 → dernier écrivain gagne ; import_piece écrit si absent (api_library.py:1544-1545). store/library/library.json : uniquement côté serveur via change_library (api_library.py:371-380 → store_write) — history/ gardé, verrou, pas de base_rev ; unfold_piece.write_library (67-81) et migrate_library.store_write (67-75) sont deux autres écrivains CLI avec history/ mais sans verrou. recordings.json : serve.py save_registry (297-298) SANS history ni verrou ; api_library._save_registry (2750-2756) avec history/ sauf si l'ancien fichier est illisible ; versions.py restore l'écrase (43, 140-143). store/reglages/*.json : userdata.js PUT avec X-Base-Rev, history/ + log.jsonl (serve.py:184-200). Cartes de calage sync/*.json : pipeline.py mode improve écrit un .candidate (409) puis /api/accept os.replace après copie dans calage/history/ (serve.py:621-635) ; anchors._finish (731-742) copie puis remplace ; sync_restore (api_library.py:2718-2731) copie puis remplace ; unfold switch convertit les autres sync avec copie history/ (246-248) ; mode new écrit sans prédécesseur. Notes pieces/data/<id>.json : jamais réécrites par structure/raccourcir/unfold (fichiers neufs à côté, _free) ; écrasées par versions.py restore (43). Fichiers déplacés sans retour dans l'app : /api/remove → removed/removed_<rec>/ (serve.py:316-322, 658-662) ; /api/reject → removed/rejected_<job>/ ; keep_deux → removed/deux-* (structure_piece.py:209-212). Effacements réels : corrections/history au-delà de 1000 (os.remove), fichiers temporaires d'export (api_library.py:1217, 1269), dossiers de travail OMR (rmtree 1911-1998), liens du dossier Finder (3044)."
+    },
+    {
+     "question": "Que deviennent les corrections quand une pièce est réparée « une portée par voix » (les ids de notes changent ? les corrections sont indexées par quoi ?) ou « raccourcie » (mesures renumérotées ? corrections après la coupe ?)",
+     "answer": "[verified] Les corrections de Calage sont indexées par l'adresse sync/ de l'enregistrement (fichier corrections/<sync>.json) et, à l'intérieur, par « voix|q|midi » pour fix et par rang de mesure pour bars (donnees-exemple corrections_verdi : 308 bars, 18 fix « V1|136.25|69 »). Les corrections de partition sont indexées par id de pièce et par ref « voix-mesure-offset-midi-occurrence » (score-edits.js:14-27). Une portée par voix, mode replace : la pièce garde son id, les fichiers de corrections ne sont jamais écrits (structure_piece.py:20-22), mais les voix peuvent être renommées V1/V2 (373) et les notes regreffées ; calage_risks (400-436) refuse replace si l'axe des mesures change ET qu'un calage à la main ou automatique existe, ou si une note corrigée n'existe plus (433-435), ou si un edit de partition est actif (407-411) ; donc en pratique replace ne passe que sans enregistrement réel ou avec un axe identique. Ce qu'il ne regarde pas : store/reglages (pianiste.edit, altNotes, passages, voice, otherVoices) — voir la finding portee-par-voix. Mode copy : nouvelle pièce, nouvel id, AUCUNE correction ne suit (ni calage, ni edits, ni réglages) : « Reprendre le calage de l'ancienne partition » (api_reprendre.py, lecture seule) propose de transférer bars/fix vers la nouvelle pièce par le chemin normal. C'est ce qui est arrivé au Verdi de Léo (HANDOFF:558 : 18 notes + barres sur 308 mesures, la rangée en a 309 → copie). Raccourcir, replace : seulement la fin, et seulement si rien de l'utilisateur ne dépasse la coupe (cut_risks 180-228 : bars plus longs que last, fix avec q ≥ q1, flag hand, sync automatique couvrant plus de mesures, edit après la coupe ou sans place connue → copie) ; les mesures gardées ne sont pas renumérotées (cut_data 160-176, rnd seulement si first > 0), donc les corrections avant la coupe restent valides et l'undo rend les mêmes octets. Couper le début = toujours une copie (185-186). Après la coupe en place, les réglages passages/resume pointant après la coupe restent dans le fichier, inoffensifs. Manque : les réglages ne sont pas examinés, et le fingerprint.bars des corrections (308 → 248) fera que l'app les gardera « pas appliquées » si un enregistrement réel reste attaché — mais ce cas est déjà refusé en place."
+    },
+    {
+     "question": "Y a-t-il une sauvegarde hors du Mac ?",
+     "answer": "[verified] Non. Le miroir mirror() (serve.py:101-119) n'est actif que si tools/backup_dir.txt existe ; il est absent du zip, TODO-LEO.md:8, STATUS.md:114 et A-VALIDER.md:28 (D4, sans réponse depuis le 26 septembre) le confirment. Même activé il ne copie que le dernier état de corrections/ et store/<area>/, pas recordings.json, pieces/, library/originals, calage/, history/, ni les sons. versions/ et .git sont sur le même disque. L'export .pupitre « pour moi » est la seule copie que l'utilisateur maîtrise et elle oublie store/reglages. Le produit emballé met les données dans ~/Library/Application Support/Pupitre (build_product.py:12-13) : rien n'y organise une copie. Time Machine : inconnu, pas dans le zip."
+    },
+    {
+     "question": "localStorage : quota et pertes (fenêtre privée, effacement des données de site, autre port = autre origine)",
+     "answer": "[verified] Le store (app.js:60-76) enveloppe chaque accès en try/catch, garde une copie mémoire et un ensemble store.failed ; l'état « ! pas enregistré (mémoire du navigateur pleine ou bloquée) » est affiché (4999-5000). Depuis le 2 octobre, les réglages (userdata.js RULES) et depuis septembre les corrections (pushToDisk), les edits (writeScoreEditsDoc) et les documents de modules (files.put) ont un fichier sur disque : fenêtre privée, profil vidé ou autre port (http://127.0.0.1:8766 ≠ http://localhost:8766 ≠ http://pupitre.localhost, launch.py:36-40 produit les deux premières selon le routeur) → l'app repart du disque (pullFromDisk 4932-4977, enter() userdata.js:232-238). Ce qui est perdu dans ces cas : les prises Chanter/Mes prises (IndexedDB pupitre-train, pupitre-prises), les pièces et corrections faites dans le Lecteur (pupitre-lecteur), les pochettes peintes (repeintes), et tout travail fait pendant que le serveur ne répondait pas (dirty en localStorage seulement). Quota : la revue du 1er octobre comptait 173 motifs de clés dont des copies entières de library.json (REVUE.md:103) ; 5 Mo sur Safari ; en cas de dépassement store.set rend false, userdata continue avec la valeur mémoire (137, 151) mais saveMeta échoue silencieusement → au prochain démarrage les drapeaux dirty sont perdus [inferred] ; rien n'avertit avant la saturation."
+    },
+    {
+     "question": "Collisions d'identifiants entre pièces",
+     "answer": "[verified] unique_id (api_library.py:397-405) ajoute -2, -3… en regardant library.json, data/*.json et lib/* : pas de collision destructrice entre pièces vivantes. Les problèmes : l'id = slug(titre)[:40] (259-262), donc dérivé d'une didascalie OCR (« suspended-in-front-of-a-statue-of-the-vi ») ou tronqué (« mi-parea-ave-maria-otello-une-portee-par ») ; il nomme tous les fichiers de l'utilisateur et ne change jamais (rename 2828-2833 ne touche que le titre) ; store/score_edits, store/reglages et corrections/ ne sont pas consultés par unique_id, donc un id libéré (pièce retirée à la main de library.json, HANDOFF:202) est réattribué et la nouvelle pièce hérite d'edits « stale » et de réglages étrangers ; les enregistrements ajoutés ont rid = 'up' + horodatage à la seconde (serve.py:591) — deux ajouts dans la même seconde sur la même pièce partageraient le nom de fichier et de sync [inferred ; l'UI les lance un par un, library.js:1238]. L'id d'un enregistrement est l'adresse sync/, pas le sha256 du son, ce que DONNEES.md:143 reconnaît comme à changer."
+    },
+    {
+     "question": "La règle « les outils n'écrivent jamais dans corrections/ et score_edits/ » face aux écritures réelles",
+     "answer": "[verified] Tenue par structure_piece.py, raccourcir_piece.py, unfold_piece.py, pipeline.py, anchors.py, api_reprendre.py (lecture seule, :13), api_relecture.py, api_lire.py. Exceptions : import_piece écrit store/score_edits/<id>.json si absent (api_library.py:1544-1545, bénin) ; versions.py restore --corrections écrase corrections/ et store/ entiers (131-145) après une version automatique mais sans copie history/ ; migrate_to_data.py:56 les déplace (migration unique) ; l'app elle-même réécrit les corrections de TOUS les enregistrements d'une pièce après un edit de partition (followOther, app.js:8002-8017, sans X-Base-Saved) — c'est voulu et versionné par le serveur, mais ce n'est pas « l'utilisateur » qui écrit. La règle ne dit rien de store/reglages ni de recordings.json, pourtant aussi du travail de l'utilisateur."
+    },
+    {
+     "question": "Crash au milieu d'une écriture (pas de tmp + rename ?)",
+     "answer": "[verified] Les écritures des données de l'utilisateur sont atomiques : store_write (serve.py:189-192, tmp unique par pid+thread), _save_corrections_locked (745-748), write_json (289-294), write_json_atomic (api_library.py:213-218), write_new (221-230), structure_piece.write_json (102-107), anchors._finish (740-742), sync_restore (2728-2731), unfold switch (247-248). Non atomiques mais sur des fichiers neufs ou de cache : unfold_piece prepare (157, 184), raccourcir _apply_replace (524-526), structure _apply_replace (744), capture (serve.py:687), pipeline work files. Non atomiques sur un fichier existant : versions.py stamp_intro réécrit app/index.html (97-99) et version.json (116) — un crash pendant « save » peut casser la page d'accueil. Ordres d'opérations à risque : unfold switch convertit les sync des autres enregistrements AVANT de basculer la pièce (234-276) — un crash entre les deux laisse des calages sur l'axe déplié pour une pièce encore pliée ; structure/raccourcir écrivent les fichiers puis lancent synth (long) puis change_library — un crash laisse des orphelins, pas de perte. Le miroir hors verrou (715-717) ne protège que la copie, pas le fichier principal."
+    },
+    {
+     "question": "Deux sessions qui modifient library.json",
+     "answer": "[verified] Dans un seul processus serveur, library.json n'est écrit que par change_library sous un verrou partagé entre rechargements (api_library.py:158-163, 371-380), et l'app ne fait jamais de PUT dessus (library.js:23 ; lecteur.js:170 l'exclut) : deux onglets, deux fenêtres, deux routes en même temps → sérialisés, history/ gardé. Trous : pas de X-Base-Rev donc pas de détection de « version périmée » si un jour l'app écrit directement ; unfold_piece.py et migrate_library.py en ligne de commande écrivent sans ce verrou ; et surtout deux PROCESSUS (serveur de test sur un port de secours sans PUPITRE_DATA, SKILL.md:22-23) partagent le fichier sans aucun verrou inter-processus — le dernier os.replace gagne, l'autre est dans history/ sans que personne ne le sache. recordings.json est pire : deux écrivains (serve.py sans verrou ni historique, api_library avec les deux)."
+    }
+   ],
+   "not_read": [
+    "code/claude/HANDOFF.md en entier (410 Ko) : seulement des grep ciblés (perte, removed/, structure, raccourcir, 1000) et les entrées 558 et 562",
+    "code/app/library.js, classeur.js, lecteur.js, prises.js, train.js : seulement les passages trouvés par grep (migrate, upload, trash, IndexedDB), pas le flux complet",
+    "code/tools/pipeline.py et anchors.py : seulement les sites d'écriture (candidate, _finish, remake_roll), pas la logique de calage",
+    "code/tools/api_library.py : lu 1-130, 140-420, 700-830, 1480-1560, 2230-2300, 2541-2900, 3005-3050, 3319-3420, 4045-4066 ; le reste (export session, OMR, Finder, synth CLI) seulement par grep",
+    "code/tools/api_images.py, api_peindre.py, api_mix.py, api_video.py, api_sanspartition.py : non lus (ils écrivent dans store/ et cache/ ; vérification des écritures non faite)",
+    "code/tools/tests/structure_test.py au-delà de la ligne 250, import_test.py, run_app_flow_test.py : non lus",
+    "Le dossier versions/, le dépôt git, Pupitre-data réel (corrections/history, store/library/history, removed/, logs/structure.log) : absents du zip",
+    "Les rapports autres que REVUE.md (1er oct.) et AVIS.md (regard neuf) : seulement grep"
+   ],
+   "need_to_go_further": [
+    "Un instantané de Pupitre-data (sans audio) : nombre de fichiers dans corrections/history par calage (le plafond 1000 a-t-il déjà joué ?), store/library/history autour du 8 oct 14:39 UTC, le contenu de removed/, logs/structure.log, l'existence de data/mi-parea…court.json",
+    "tools/backup_dir.txt et tools/library_dir.txt tels qu'ils sont sur le Mac ; état de Time Machine",
+    "Pouvoir lancer serve.py sur une copie de Pupitre-data pour exécuter les trois expériences (deux onglets sur score_edits, serveur arrêté puis autre fenêtre, recordings.json tronqué)",
+    "Le profil Chrome de Léo : taille de localStorage (pupitre.* ) et des bases IndexedDB pupitre-train / pupitre-prises, pour mesurer ce qui est réellement exposé",
+    "Un PC Windows avec le dossier copié : première ouverture (migrate), un PUT /corrections avec un nom Unicode, un restore",
+    "La liste des sessions/agents qui ont lancé un serveur sur un port de secours sans PUPITRE_DATA (grep du journal des agents, pas seulement HANDOFF)",
+    "Le dossier versions/ : vérifier que les 760 versions contiennent bien recordings.json et store/reglages (KEEP) et qu'un restore --corrections a déjà été fait ou non"
+   ]
+  }
+ ],
+ "findings": [
+  {
+   "id": "tests/headless-0-erreur-ne-prouve-rien",
+   "title": "« Headless, 0 erreur JS » : 129 lignes de HANDOFF reposent sur un contrôle qui ne voit ni l'écran, ni le son, ni le serveur",
+   "severity": "critical",
+   "category": "oversold",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/simplicity_report.py",
+     "line": 90,
+     "quote": "else { blocked++; send('Fetch.fulfillRequest', { requestId, responseCode: 200, ... body: Buffer.from('{}')"
+    },
+    {
+     "file": "code/tools/simplicity_report.py",
+     "line": 85,
+     "quote": "if (d.method === 'Runtime.exceptionThrown') errors.push("
+    },
+    {
+     "file": "code/tools/tests/groupe_calage_headless.mjs",
+     "line": 73,
+     "quote": "HTMLMediaElement.prototype.play = function () { ... return Promise.reject(new DOMException('test : rien ne joue'"
+    },
+    {
+     "file": "code/tools/tests/groupe_calage_headless.mjs",
+     "line": 78,
+     "quote": "window.fetch = (u, o = {}) => { ... return Promise.reject(new TypeError('test : écriture bloquée')); }"
+    },
+    {
+     "file": "code/claude/HANDOFF.md",
+     "line": 205,
+     "quote": "Vérifié 1440 et 900 px, 0 erreur."
+    },
+    {
+     "file": "code/claude/HANDOFF.md",
+     "line": 172,
+     "quote": "21 pièces × chaque voix, lecture/avance/recul/clic/glisser ... 0 erreur JS."
+    },
+    {
+     "file": "01-HISTOIRE-ET-ETAT.md",
+     "line": 180,
+     "quote": "Proves the page did not crash during a scripted path with server writes blocked."
+    }
+   ],
+   "detail": "Le contrôle « headless » compte deux choses : les exceptions non attrapées et les console.error (simplicity_report.py:85-86, groupe_calage_headless.mjs:69-70). Pendant ce temps chaque POST/PUT reçoit `{}` avec un 200 (simplicity_report.py:90) ou est rejeté (groupe_calage_headless.mjs:64, :78), la lecture audio est interdite (:73-75), et la seule « vue » est un décompte de boutons et de mots. Un `try/catch` silencieux, un calage faux, une partition illisible, un bouton qui ne fait rien, un son qui ne joue pas : zéro erreur. Le HANDOFF contient 129 lignes « 0 erreur », 77 « headless », 38 « écritures bloquées » et zéro ligne « Léo a vu / écouté / validé » (grep). Ces lignes ont servi de preuve à Léo pour prendre des décisions produit ; 01-HISTOIRE:180 le reconnaît mais l'enterre dans un tableau. C'est le mécanisme central par lequel le projet se raconte qu'il marche.",
+   "what_instead": "Interdire dans CLAUDE.md le mot « vérifié » sans l'un de ces trois artefacts : (1) une capture PNG comparée à une capture de référence (diff de pixels, dossier rapports/visuel/<version>/), (2) un fichier rapports/ecoute-humaine/<date>.md signé par la personne qui a écouté, (3) un test avec assertion et code de sortie. Remplacer la ligne « 0 erreur JS » par « 0 exception, N écritures bloquées, écran non regardé, son non joué » pour qu'elle dise ce qu'elle prouve. Ajouter à simplicity_report.py un comptage des `catch` qui avalent (patcher console.warn + un compteur global de promesses rejetées) sinon le chiffre reste décoratif.",
+   "experiment": "Casser volontairement une fonction visible (ex. dans app.js faire que le bouton play ne lance rien, ou décaler le calage de 3 s) et relancer simplicity_report.py et groupe_calage_headless.mjs : si les deux rapportent toujours « 0 erreur », la preuve ne vaut rien, ce qui est le résultat attendu.",
+   "area_key": "tests",
+   "area": "Honnêteté des tests (code/tools/tests/, run_checks.py, simplicity_report.py, les lignes « headless, 0 erreur » du HANDOFF, les recettes)",
+   "severity_original": "critical",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "tests/cale-verdict-jamais-teste",
+   "title": "Le verdict « Bien calé / Calé » n'a aucun test et repose sur within50, que le projet sait lui-même incapable de distinguer juste et faux",
+   "severity": "critical",
+   "category": "wrong",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/app/library.js",
+     "line": 1521,
+     "quote": "const tools = w50 == null ? '' : w50 >= 85 ? 'Les outils le trouvent très bien calé' : w50 >= 70 ? 'Les outils le trouvent bien calé' : 'Les outils hésitent par endroits';"
+    },
+    {
+     "file": "code/app/library.js",
+     "line": 1618,
+     "quote": "const verdict = !bad.length ? 'Bien calé' : `Calé, quelques endroits à revoir"
+    },
+    {
+     "file": "code/app/app.js",
+     "line": 4063,
+     "quote": "const sv = sy.within50 >= 85 ? 'good' : sy.within50 >= 70 ? 'mid' : 'bad';"
+    },
+    {
+     "file": "code/tools/tests/calage_truth.py",
+     "line": 3,
+     "quote": "The pipeline's own score (« within50 » = a note starts near SOME detected attack) cannot tell right from wrong in a choir (Caruso scored 100 % while 28 of 29 bars were > 1 s off)."
+    },
+    {
+     "file": "01-HISTOIRE-ET-ETAT.md",
+     "line": 113,
+     "quote": "The automatic alignment squeezed bars 255–308, five minutes of music, between 11:18 and 12:52"
+    }
+   ],
+   "detail": "Aucun fichier de code/tools/tests/ ne contient « Calé », « Bien calé » ou « Lue à » (grep : 0 fichier). Le mot que le client voit est fabriqué dans library.js:1520-1533 à partir de deux choses : within50 (seuils 85/70, répétés dans app.js:4063) et trois fenêtres de 15 s que l'utilisateur juge à l'oreille (« Ça suit bien / Pas tout à fait »). Or calage_truth.py:3-4, écrit par le même projet, dit noir sur blanc que within50 « cannot tell right from wrong » et cite un cas à 100 % avec 28 mesures sur 29 fausses. Le cas Verdi est exactement ça : 54 mesures écrasées dans 94 s, et si les trois fenêtres tirées tombent dans la partie juste, l'écran dit « Bien calé ». Aucun test ne construit une carte de calage pathologique (fin de l'enregistrement avant la fin de la partition) pour vérifier que l'app refuse de dire « Calé ». Le signal de confiance de l'étape « confidence.py » (shift-scan) est mesuré dans calage_confidence_test.py mais ce fichier n'a aucune assertion et ne branche rien dans l'UI.",
+   "what_instead": "Écrire tools/tests/calage_sanity_test.py (sans audio) sur des cartes synthétiques : (a) carte où les 20 % dernières mesures tiennent dans < 40 % de la durée médiane par mesure → la fonction de verdict doit répondre « Calage incomplet : l'enregistrement s'arrête avant la fin » ; (b) carte avec within50 = 100 mais pente de tempo divisée par 5 → jamais « très bien calé ». Déplacer la décision de library.js:1520-1533 dans une fonction pure (ex. app/calage-verdict.js verdictOf(sync, data, duration, answers)) importable par node, et la tester. Dans la phrase montrée au client, ne plus citer within50 ; dire ce qui a été écouté (3 × 15 s) et ce qui ne l'a pas été.",
+   "experiment": "Prendre donnees-exemple/verdi-otello (structure.json + un sync reconstruit à partir des temps décrits : voix finie à 12:09, 308 mesures) et passer la carte dans la fonction de verdict : aujourd'hui elle peut rendre « Bien calé » si les trois fenêtres sont avant 11:18. Un test de 20 lignes suffit à le montrer.",
+   "area_key": "tests",
+   "area": "Honnêteté des tests (code/tools/tests/, run_checks.py, simplicity_report.py, les lignes « headless, 0 erreur » du HANDOFF, les recettes)",
+   "severity_original": "critical",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "tests/refs-calage-ecrites-par-l-aligneur",
+   "title": "Les seules références de calage livrées (Bach, Mozart) ont été « faites à l'œil par Claude » à partir de la sortie de l'aligneur qu'elles servent à juger",
+   "severity": "high",
+   "category": "wrong",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/tests/fixtures/calage_refs/bach.json",
+     "line": 58,
+     "quote": "\"status\": \"made by eye (Claude, 25 Sep 2026) on CQT pictures ... started from the new aligner coarse result, disputed bars checked one by one; precision about ±0.25 s\""
+    },
+    {
+     "file": "code/tools/tests/fixtures/calage_refs/mozart.json",
+     "line": 88,
+     "quote": "\"status\": \"made by eye (Claude, 25 Sep 2026) ... started from the new aligner coarse result"
+    },
+    {
+     "file": "code/tools/tests/calage_truth.py",
+     "line": 15,
+     "quote": "Also frozen: the by-eye references of the structure test pieces (Mozart, Bach; ±0.25 s, made 25 Sept 2026"
+    },
+    {
+     "file": "code/tools/tests/calage_truth.py",
+     "line": 350,
+     "quote": "'by-eye (±0.25 s)': [k for k, r in refs.items() if r['kind'] == 'by-eye']"
+    }
+   ],
+   "detail": "Les deux fixtures de calage_refs/ sont les seules références de calage dans le zip. Leur champ status dit qu'elles ont été produites par l'agent, en regardant des images CQT, en partant du résultat grossier du nouvel aligneur et en ne revérifiant que les mesures « disputées ». C'est une référence circulaire : là où l'aligneur se trompait sans que l'image le montre, la référence se trompe pareil, et l'erreur est comptée comme juste. calage_truth.py les met dans un groupe « by-eye » séparé et les dit bonnes « for errors > 0.5 s only » (:16), ce qui est honnête, mais summary() les agrège quand même dans les tableaux imprimés (:345-375) et rien n'empêche un rapport de citer ce groupe comme un chiffre de qualité. Le vrai jeu de vérité (calage de Léo) est hors zip ; je ne peux pas vérifier son gel.",
+   "what_instead": "Marquer ces deux fichiers comme « sanity only » et les sortir du pooled de summary() ; ou les refaire par une personne qui n'a pas vu la sortie de l'aligneur, en tapant au clavier sur l'enregistrement (la fonction « taper chaque mesure » existe déjà dans l'app). Pour tout futur ruler : écrire dans le fichier qui l'a fait, à partir de quoi, et s'il a vu la sortie de l'outil mesuré.",
+   "experiment": "Faire taper à Léo (ou à un choriste) les 26 barres du Bach et les 41 du Mozart à l'oreille, sans voir la carte ; comparer aux fixtures. Si plus de 3 barres diffèrent de plus de 0,25 s, la référence « by-eye » est à jeter.",
+   "area_key": "tests",
+   "area": "Honnêteté des tests (code/tools/tests/, run_checks.py, simplicity_report.py, les lignes « headless, 0 erreur » du HANDOFF, les recettes)",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "tests/verdi-29-sur-29-reference-claude-holdout-filtre",
+   "title": "« 29 mesures justes sur 29 » : référence transcrite par Claude « NOT checked by Léo », et le hold-out exclut par code l'unique mesure à triolet",
+   "severity": "high",
+   "category": "oversold",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "rapports/verdi-lecture-parfaite-2026-10-08/scripts/ref.py",
+     "line": 1,
+     "quote": "The small hand-made reference (made by Claude reading the 600 dpi page crops, 8 Oct 2026; NOT checked by Léo)."
+    },
+    {
+     "file": "rapports/verdi-lecture-parfaite-2026-10-08/scripts/holdout.py",
+     "line": 4,
+     "quote": "Encoded by Claude from the 600 dpi crops (one pass + the head-position helper), NOT checked by Léo."
+    },
+    {
+     "file": "rapports/verdi-lecture-parfaite-2026-10-08/scripts/holdout.py",
+     "line": 28,
+     "quote": "dict(id='p15-s2-b3', page=15, page_bar=7, tags=['triplet', 'cue notes printed small'],"
+    },
+    {
+     "file": "rapports/verdi-lecture-parfaite-2026-10-08/scripts/holdout.py",
+     "line": 43,
+     "quote": "REFS = [r for r in HOLD if r['page'] <= 14] if which == 'hold' else"
+    },
+    {
+     "file": "rapports/verdi-lecture-parfaite-2026-10-08/work/holdout.txt",
+     "line": 3,
+     "quote": "2 + une seule ligne par chanteuse                  bars 14/14  notes 46/46 +0  wrong []"
+    },
+    {
+     "file": "rapports/verdi-lecture-parfaite-2026-10-08/RESULTATS.md",
+     "line": 45,
+     "quote": "Limite : aucune ne contient de triolet."
+    }
+   ],
+   "detail": "Le hold-out est défini avec 15 mesures (HOLD, holdout.py:13-30) dont une seule contient un triolet (p15-s2-b3). La ligne 43 filtre `page <= 14` : la mesure à triolet est retirée avant tout calcul, et le tableau holdout.txt ne compte plus que 14/14. Le rapport (RESULTATS.md:45) dit « aucune ne contient de triolet » comme une limite du tirage, pas comme l'effet d'un filtre écrit dans le script. Par ailleurs les 29 vérités sont une transcription de l'agent, non relue par Léo, faite depuis les mêmes crops 600 dpi que lit la chaîne : une erreur de lecture partagée entre la référence et la chaîne compte comme un succès. 15 des 29 mesures ont servi à écrire les règles (RESULTATS.md:15-16). Le chiffre 29/29 ne mesure donc ni les triolets, ni les pages difficiles (16, Ave Maria), ni un désaccord avec un musicien.",
+   "what_instead": "Rétablir p15-s2-b3 dans le hold-out ou expliquer dans RESULTATS.md pourquoi `page <= 14` existe. Faire relire les 29 mesures de référence par Léo avec la Loupe (une image de la mesure, la transcription dessous, oui/non), et écrire « checked by Léo on <date> » dans ref.py. Remplacer « 29/29 » par « 14 mesures simples jamais vues : 14/14 ; triolets : non mesurés ; référence non relue ».",
+   "experiment": "Lancer holdout.py avec `page <= 15` (une ligne à changer) et publier la ligne de résultat. Puis faire relire à Léo les 15 mesures de ref.REF : chaque désaccord retire une mesure du 29.",
+   "area_key": "tests",
+   "area": "Honnêteté des tests (code/tools/tests/, run_checks.py, simplicity_report.py, les lignes « headless, 0 erreur » du HANDOFF, les recettes)",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "tests/548-et-1490-comptent-le-code-contre-lui-meme",
+   "title": "« 548/548 » et « pkg 1490 ok » sont des produits assertions × pièces de Léo, pas des preuves : le code est comparé à sa propre sortie",
+   "severity": "high",
+   "category": "oversold",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/tests/score_edits_test.mjs",
+     "line": 16,
+     "quote": "const { model, aliases, refs, mapped } = S.buildScoreModel(text, data);"
+    },
+    {
+     "file": "code/tools/tests/score_edits_test.mjs",
+     "line": 25,
+     "quote": "r.forEach((x) => { dataAll.add(x); if (xmlRefs.has(x)) f++; });"
+    },
+    {
+     "file": "code/tools/tests/score_edits_test.mjs",
+     "line": 270,
+     "quote": "for (const p of M.pieces) { try { C[p.id] = coverage(p); cov.push(C[p.id]); }"
+    },
+    {
+     "file": "code/tools/tests/pupitre_pkg_test.py",
+     "line": 563,
+     "quote": "for aud in AUD:"
+    },
+    {
+     "file": "code/tools/tests/pupitre_pkg_test.py",
+     "line": 565,
+     "quote": "for pid, live in pieces.items():"
+    },
+    {
+     "file": "rapports/revue-code-2026-10-01/REVUE.md",
+     "line": 192,
+     "quote": "`run_score_edits_test` 548/548"
+    },
+    {
+     "file": "code/claude/HANDOFF.md",
+     "line": 322,
+     "quote": "Tests : bugs 12/12, score_edits 548/548, pkg 1490 ok."
+    }
+   ],
+   "detail": "score_edits_test.mjs §1 construit les refs avec buildScoreModel (le code testé) puis vérifie que ces refs se retrouvent dans… le modèle produit par le même appel (:16-30) : c'est une mesure de couverture interne, pas une vérité. Les §2 et §4 appliquent une correction puis re-parsent pour retrouver ce qu'on vient d'appliquer (:72-77, :214-217) : utile comme non-régression, mais tautologique pour « la correction est-elle musicalement juste ». Le chiffre 548 vient de ≈ 73 assertions répétées sur 13 partitions de Léo (run_score_edits_test.py:24-31 lit pieces.js). pupitre_pkg_test fait de même : check_manifest (~20 R.check par export, :312-345) × 15 pièces × 3 audiences, puis réimport de ce que le même api_library.py vient d'écrire. Ces grands nombres sont cités dans le HANDOFF et la revue comme des preuves de santé, et personne ne les divise par le nombre de pièces. Un client n'a aucune de ces 15 pièces.",
+   "what_instead": "Afficher dans la sortie des runners « N assertions distinctes × M pièces » et ne citer dans HANDOFF que N. Ajouter à score_edits_test un oracle indépendant : 3 partitions publiques (Mozart, Bach, Verdi 3 pages du zip) avec une liste de refs écrite à la main pour 10 notes (bar, offset, midi) et vérifier que buildScoreModel les trouve. Pour pupitre_pkg_test, garder le mode --mutant et y ajouter une mutation sur import (ex. perdre les corrections) pour prouver que le round-trip mord.",
+   "experiment": "Introduire dans score-edits.js un bug qui décale toutes les refs d'une note (off+1) : si score_edits_test reste à 548/548 (la couverture interne reste cohérente), le test ne prouve pas ce qu'on lui fait dire.",
+   "area_key": "tests",
+   "area": "Honnêteté des tests (code/tools/tests/, run_checks.py, simplicity_report.py, les lignes « headless, 0 erreur » du HANDOFF, les recettes)",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "tests/benchs-sans-assertion-comptes-comme-tests",
+   "title": "Neuf « tests » n'ont aucune assertion : ce sont des bancs qui impriment, sans seuil ni code de sortie, et ils ont tourné 4 jours avec une étape en panne",
+   "severity": "high",
+   "category": "weak",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/tests/calage_truth.py",
+     "line": 423,
+     "quote": "print(f'   {lab:11s} {headline(r)}{info}')"
+    },
+    {
+     "file": "code/tools/tests/calage_warp.py",
+     "line": 343,
+     "quote": "print('\\n=== Tier A: |align(W(x)) − W(align(x))| per onset (s)"
+    },
+    {
+     "file": "code/tools/tests/calage_anchors_test.py",
+     "line": 110,
+     "quote": "print(f'{c:13s} moved bars {T.fmt(out[c][\"moved\"])}')"
+    },
+    {
+     "file": "code/tools/tests/recaler_truth.py",
+     "line": 136,
+     "quote": "print(json.dumps(report['summary'], indent=1))"
+    },
+    {
+     "file": "code/tools/tests/copier_mesure.mjs",
+     "line": 59,
+     "quote": "console.log('résumé', JSON.stringify(out.resume));"
+    },
+    {
+     "file": "code/tools/tests/bench_garde_test.py",
+     "line": 3,
+     "quote": "du 4 au 8 oct, basic-pitch (étape « notes ») échouait à chaque pièce sans cache ; le job finissait « done » et le banc comptait ces calages sans accords comme les autres."
+    },
+    {
+     "file": "code/tools/run_checks.py",
+     "line": 46,
+     "quote": "msg = f\"{piece['id']:9s} {rec['id']:13s} accord {t.get('median')} ±{t.get('spread')} (utilisé {t.get('used')}) · calage {d['sync']['within50']} %\""
+    }
+   ],
+   "detail": "calage_truth.py, calage_warp.py, calage_anchors_test.py, calage_confidence_test.py, recaler_truth.py, sanspartition_truth.py, choir_timed_check.py, copier_mesure.mjs et run_checks.py n'ont aucun `ok(`/`assert` : ils calculent et impriment. Un recul de qualité n'est détecté que si quelqu'un lit le tableau et se souvient du précédent. C'est exactement ce qui s'est passé du 4 au 8 octobre : basic-pitch en panne, jobs « done », chiffres publiés, conclusion « la fusion casse le rubato » tirée d'un artefact (HANDOFF:518, 01-HISTOIRE:109). Le garde-fou ajouté (bench_garde) ne couvre que « une étape a échoué », pas « le chiffre a reculé de 10 points ». Le SKILL.md les présente comme la « Calage quality » à lancer (SKILL.md:27-28) mais ils ne font jamais échouer un run.",
+   "what_instead": "Donner à chaque banc un fichier de seuils gelé (tools/tests/fixtures/bench_floor.json : par pièce, p100 minimal et perdues maximales = le dernier résultat accepté) et un `sys.exit(1)` quand on passe dessous ; mettre à jour le plancher seulement par une commande explicite (--accept) qui écrit la version dans le HANDOFF. Pour calage_warp.py : seuil « > 0,25 s sur plus de 5 % des attaques hors zone coupée = échec ». Pour run_checks.py : le retirer de tests/ ou le renommer bench_, il ne teste rien et ne sert qu'à accorder le piano.",
+   "experiment": "Relancer calage_truth.py --cand avec une carte décalée de +0,3 s partout : aucun échec ne sera signalé, seule la médiane change dans le texte imprimé.",
+   "area_key": "tests",
+   "area": "Honnêteté des tests (code/tools/tests/, run_checks.py, simplicity_report.py, les lignes « headless, 0 erreur » du HANDOFF, les recettes)",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "tests/paroles-jamais-comptees-dans-les-tests",
+   "title": "Aucun test ni garde ne compte les syllabes après « Une portée par voix » : Voix 2 a perdu ses paroles (13 pour 328 notes) et tout est resté vert",
+   "severity": "high",
+   "category": "missing",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/lecture/structure.py",
+     "line": 518,
+     "quote": "if report.get('notes_before') and report.get('notes_after', 0) < KEEP_NOTES * report['notes_before']:"
+    },
+    {
+     "file": "code/tools/lecture/structure.py",
+     "line": 853,
+     "quote": "report['lyrics_dropped'] += 1"
+    },
+    {
+     "file": "code/tools/tests/structure_test.py",
+     "line": 181,
+     "quote": "check(rep['ok'] and n_in == n_out, f'no note lost on a stable reading: {n_in} -> {n_out}')"
+    },
+    {
+     "file": "code/tools/tests/structure_test.py",
+     "line": 222,
+     "quote": "check(rep['notes_before'] == rep['notes_after'], f\"no note lost"
+    },
+    {
+     "file": "rapports/comprendre-avant-de-lire-2026-10-08/RESULTATS.md",
+     "line": 81,
+     "quote": "| Syllabes de paroles | 1 020 sur 5 « lignes » | 507 sur 1 ligne |"
+    }
+   ],
+   "detail": "Le fait établi par le relecteur principal est que lecture-APRES contient V2 « Voix 2 » avec 328 notes et 13 paroles seulement [verified]. decide() dans structure.py n'a qu'une barrière sur les notes (KEEP_NOTES = 0,995, :459, :518) ; lyrics_dropped est compté (:853) et affiché (:548) mais ne bloque jamais. structure_test.py vérifie trois fois « no note lost » (:181, :222, :249-252) et jamais « no syllable lost on a sung part » ; le seul contrôle de paroles (:164) porte sur quatre mesures jouets. Le rapport présente « 507 sur 1 ligne » comme un gain par rapport à 1 020 bruitées, sans dire qu'une chanteuse entière a perdu ses mots. Rien dans tests/ ne lit les fichiers Verdi de donnees-exemple/, pourtant publics et dans le zip. Pour un produit dont la contrainte n°4 est « Léo entend des mots », c'est la mesure qui manque le plus.",
+   "what_instead": "Dans structure.py decide() : ajouter `syllables_after >= 0.97 * syllables_before` par PARTIE chantée (count_notes existe déjà :491-495, il suffit de l'appeler par part) ; refuser sinon avec la phrase « des paroles manqueraient sur <nom de la voix> ». Dans structure_test.py : un cas d'or = donnees-exemple/verdi-otello/lecture-AVANT → repair() → comparer notes ET syllabes par partie au fichier APRES attendu, corrigé une fois à la main pour Voix 2. Interdire que le rapport cite un total de syllabes sans le détail par partie.",
+   "experiment": "Exécuter count_notes() par <part> sur lecture-AVANT et lecture-APRES du zip (10 lignes de Python) et publier les deux tableaux côte à côte : le trou sur Voix 2 apparaît immédiatement.",
+   "area_key": "tests",
+   "area": "Honnêteté des tests (code/tools/tests/, run_checks.py, simplicity_report.py, les lignes « headless, 0 erreur » du HANDOFF, les recettes)",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "tests/suite-non-executable-hors-du-mac-de-leo",
+   "title": "La suite ne peut tourner nulle part ailleurs que sur le Mac de Léo : fixtures absentes du zip, données achetées, jsc, Chrome mac_arm, .venv, pas de CI",
+   "severity": "high",
+   "category": "risk",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/tests/calage_truth.py",
+     "line": 57,
+     "quote": "FROZEN = os.path.join(ROOT, 'tools', 'tests', 'fixtures', 'calage_truth_frozen.json')"
+    },
+    {
+     "file": "code/tools/tests/anchors_words_test.py",
+     "line": 33,
+     "quote": "F = os.path.join(HERE, 'fixtures', 'loch_words')"
+    },
+    {
+     "file": "code/tools/tests/relire_lecture_test.mjs",
+     "line": 13,
+     "quote": "const FX = path.resolve(here, '..', '..', 'app', 'maquettes', 'relire-lecture', 'fixture');"
+    },
+    {
+     "file": "code/tools/tests/ai_read_test.py",
+     "line": 264,
+     "quote": "truth = TS / '44-nelson-07-et-resurrexit-photos-leo' / 'truth.mxl'"
+    },
+    {
+     "file": "code/tools/tests/run_app_flow_test.py",
+     "line": 17,
+     "quote": "JSC = '/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc'"
+    },
+    {
+     "file": "code/tools/tests/groupe_calage_headless.mjs",
+     "line": 11,
+     "quote": "const ver = readdirSync(root).filter((d) => d.startsWith('mac_arm'))[0];"
+    },
+    {
+     "file": "code/tools/tests/pupitre_pkg_test.py",
+     "line": 559,
+     "quote": "R.check('found the « moi » recordings to guard (Chord Perfect…)', len(private) >= 10, len(private))"
+    },
+    {
+     "file": "03-INVENTAIRE.md",
+     "line": 79,
+     "quote": "`tools/tests/fixtures/calage_bench.json` and `calage_truth_frozen.json` ... left out."
+    }
+   ],
+   "detail": "Mon comptage sur les 61 fichiers : 32 lisent Pupitre-data, pieces.js, des fixtures ou de l'audio de Léo ; 6 exigent jsc (macOS) ; 2 cherchent chrome-headless-shell dans ~/Library/Caches avec un filtre mac_arm ; pupitre_pkg_test symlinke .venv (:194) et exige au moins 10 enregistrements achetés (:559). Les fixtures loch_words/, calage_truth_frozen.json, v1_nelson10_libre.pupitre (pupitre_pkg_test.py:70, :813) et app/maquettes/relire-lecture/fixture (relire_lecture_test.mjs:13 ; le dossier n'existe pas dans le zip) ne sont pas livrées. Il n'y a ni requirements.txt, ni lock, ni CI [verified par le relecteur principal]. Conséquence : personne d'autre que Léo (et ses agents, sur sa machine) ne peut dire si la suite passe, et une bêta Windows ne pourra être testée par aucun de ces fichiers. Une suite qu'on ne peut pas exécuter ailleurs n'est pas une suite, c'est un journal.",
+   "what_instead": "Séparer en deux dossiers : tools/tests/unit/ (ne lit que des fixtures publiques livrées : Verdi 3 pages, Mozart, Bach, les synthétiques) et tools/bench/ (tout ce qui a besoin de Pupitre-data). Remplacer jsc par node partout (REVUE.md:25 note déjà que editor_test/pianiste_test plantent sous node à cause de `print`). Un `tools/tests/run_all.py` qui lance unit/ et sort 1 au premier échec ; un requirements.txt gelé ; un job GitHub Actions ubuntu + windows qui lance run_all.py. Livrer dans fixtures/ une version publique de loch_words (remplacer Loch, sous droits, par le Mozart) pour que anchors_words_test tourne.",
+   "experiment": "Cloner le zip sur une machine Linux ou Windows vierge et lancer les 61 fichiers : compter ceux qui s'exécutent jusqu'au bout. Mon estimation d'après le code : moins de 25.",
+   "area_key": "tests",
+   "area": "Honnêteté des tests (code/tools/tests/, run_checks.py, simplicity_report.py, les lignes « headless, 0 erreur » du HANDOFF, les recettes)",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "tests/test-rouge-connu-tolere-depuis-une-semaine",
+   "title": "Un test rouge sur la sécurité des corrections est « connu » depuis le 1er octobre et normalisé dans le skill ; deux suites plantent sous node",
+   "severity": "high",
+   "category": "data-loss",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/claude/skills/pupitre-tester/SKILL.md",
+     "line": 26,
+     "quote": "Known: `run_app_flow_test.py` has 1 old failure (« fichier des corrections vide »)."
+    },
+    {
+     "file": "rapports/revue-code-2026-10-01/REVUE.md",
+     "line": 25,
+     "quote": "`run_app_flow_test.py` (22/23, the known « fichier des corrections vide »)"
+    },
+    {
+     "file": "code/tools/tests/app_flow_post.js",
+     "line": 56,
+     "quote": "ok(JSON.parse(disk.get('store/score_edits/loch.json')).edits.length === 0 && se.redo.length === 2, 'fichier des corrections vide, 2 « rétablir » possibles');"
+    },
+    {
+     "file": "rapports/revue-code-2026-10-01/REVUE.md",
+     "line": 25,
+     "quote": "`editor_test.mjs` and `pianiste_test.mjs` crash before the first assertion with `ReferenceError: print is not defined`"
+    }
+   ],
+   "detail": "L'assertion qui échoue (app_flow_post.js:56) vérifie qu'après deux « annuler » le fichier des corrections de partition est vide et que deux « rétablir » sont possibles : c'est un test sur l'intégrité de l'historique des corrections, donc sur la contrainte « ne jamais perdre le travail ». Au lieu d'être corrigée ou expliquée, la défaillance a été inscrite comme « connue » dans le skill que chaque agent lit (SKILL.md:26-27), et chaque session la recopie (« 22/23 known »). De même, la revue du 1er octobre note que editor_test.mjs et pianiste_test.mjs plantent sous node avant la première assertion ; une semaine plus tard l'en-tête de ces fichiers dit toujours « Run: jsc » (editor_test.mjs:3). Un test rouge toléré rend tous les verts suspects : on a appris aux agents à lire « 22/23 » comme « OK ».",
+   "what_instead": "Décider en une heure : soit le comportement attendu à app_flow_post.js:56 est juste et il faut corriger score-edits.js/app.js (undoScoreEdit ne vide pas le fichier), soit l'attente est fausse et on change l'assertion avec un commentaire daté. Retirer la phrase « Known: 1 old failure » du SKILL.md. Ajouter `const print = globalThis.print ?? console.log;` dans les deux suites jsc. Règle : un test rouge bloque la version ; pas de « connu ».",
+   "experiment": "Rejouer le scénario de app_flow_post.js à la main dans l'app (deux corrections, deux ⌘Z) et ouvrir store/score_edits/loch.json : s'il n'est pas vide, un utilisateur qui annule garde des corrections fantômes appliquées à la réouverture.",
+   "area_key": "tests",
+   "area": "Honnêteté des tests (code/tools/tests/, run_checks.py, simplicity_report.py, les lignes « headless, 0 erreur » du HANDOFF, les recettes)",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "tests/tests-qui-grep-le-source",
+   "title": "Des tests vérifient la présence de chaînes dans le code source au lieu de comportements",
+   "severity": "medium",
+   "category": "weak",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/tests/run_bugs_test.py",
+     "line": 89,
+     "quote": "ok_ed = \"/^[a-g]$/.test(letter)\" not in ed and 'e.altKey && !e.metaKey && !e.ctrlKey && nameKey' in ed"
+    },
+    {
+     "file": "code/tools/tests/vitesse_test.py",
+     "line": 129,
+     "quote": "i_prep, i_bg, i_sep = src.index(\"job.step('prepare'\"), src.index(\"ctx['madmom_bg'] = subprocess.Popen\"), src.index(\"job.step('separate'\")"
+    },
+    {
+     "file": "code/tools/tests/vitesse_test.py",
+     "line": 132,
+     "quote": "check('stopped when the run ends early', \"bg.kill()\" in src)"
+    },
+    {
+     "file": "code/tools/tests/run_app_flow_test.py",
+     "line": 23,
+     "quote": "section = cut('// ================= « Corriger la partition »', '// ================= add-on modules')"
+    }
+   ],
+   "detail": "run_bugs_test.py:88-90 « teste » que l'éditeur ne renomme plus une note avec une lettre seule en cherchant deux chaînes dans editor.js : renommer la variable `nameKey` casse le test, réintroduire le bug sous une autre forme ne le casse pas. vitesse_test.py:128-132 vérifie l'ordre de trois sous-chaînes dans pipeline.py et la présence de `bg.kill()` : cela ne prouve pas que madmom est arrêté, seulement que le texte contient ces mots. run_app_flow_test.py découpe app.js par des commentaires-marqueurs (:22-33) pour en extraire des fonctions : le test dépend de commentaires que n'importe quel agent peut déplacer (ils existent aujourd'hui, app.js:62, :881, :7873, :8133). Ce sont des tests qui donnent du vert sans protéger le comportement.",
+   "what_instead": "Pour l'éditeur : exporter la fonction de gestion clavier d'editor.js (ou la sortir dans editor-keys.js) et tester avec un faux événement {key:'a', altKey:false} → aucune modification, {key:'a', altKey:true} → note renommée. Pour pipeline : tester Job.run avec un faux subprocess.Popen qui enregistre kill() (comme vitesse_test le fait déjà pour Audiveris :56-66). Pour app.js : continuer de sortir les sections testées dans des modules (score-edits.js l'est déjà) et importer, pas découper du texte.",
+   "experiment": "",
+   "area_key": "tests",
+   "area": "Honnêteté des tests (code/tools/tests/, run_checks.py, simplicity_report.py, les lignes « headless, 0 erreur » du HANDOFF, les recettes)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "tests/faux-modele-repond-la-verite",
+   "title": "Les tests de la chaîne IA font répondre au faux modèle la vérité elle-même : ils prouvent la plomberie, jamais qu'une IA corrige une lecture",
+   "severity": "medium",
+   "category": "oversold",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/tests/ai_read_test.py",
+     "line": 272,
+     "quote": "lines = [b.text() for b in bars[first - 1:first + 3]]"
+    },
+    {
+     "file": "code/tools/tests/ai_read_test.py",
+     "line": 285,
+     "quote": "return answer(sid, broken=(n_user == 1))     # wrong first, right after the error list"
+    },
+    {
+     "file": "code/tools/tests/ai_package_test.py",
+     "line": 31,
+     "quote": "return P.draft_text(job, title, merged=job / 'truth.musicxml')"
+    },
+    {
+     "file": "01-HISTOIRE-ET-ETAT.md",
+     "line": 81,
+     "quote": "A real AI answer applied through \"Relire par une IA\". The piano part against any truth."
+    }
+   ],
+   "detail": "Dans ai_read_test.py le FakeProvider renvoie les mesures de truth.mxl (answer(), :268-278) en cassant volontairement une ligne au premier appel ; ai_package_test.py construit la « réponse de l'IA » depuis truth.musicxml (:29-31). Les 125 assertions des deux fichiers vérifient donc que le validateur refuse une mesure trop courte, que la boucle redemande, que le zip se complète : c'est utile, mais cela ne dit rien de la question du produit (« une IA rend-elle une lecture juste et applicable ? »). 01-HISTOIRE:81 l'admet : jamais testé avec une vraie réponse. Les lignes du HANDOFF sur « Relire par une IA » citent ces tests comme verts sans cette réserve.",
+   "what_instead": "Garder ces tests (plomberie) et ajouter un dossier rapports/ia-reelle/ avec, par version, une vraie réponse d'IA (Claude/ChatGPT/Gemini) sur les 3 pages Verdi du zip, appliquée par ai_package.complete(), et le nombre de notes/syllabes qui diffèrent de la lecture-APRES corrigée à la main. Un test de non-régression peut ensuite rejouer cette réponse enregistrée (fixture publique) sans réseau.",
+   "experiment": "Envoyer le paquet Verdi (donnees-exemple) à ChatGPT et à Claude une fois, coller la réponse dans « Recevoir la lecture » : compter les refus de P.complete() et les notes changées. C'est une demi-journée et cela remplace cent assertions sur un faux modèle.",
+   "area_key": "tests",
+   "area": "Honnêteté des tests (code/tools/tests/, run_checks.py, simplicity_report.py, les lignes « headless, 0 erreur » du HANDOFF, les recettes)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "tests/pieces-de-leo-codees-en-dur-dans-logique-et-tests",
+   "title": "Les pièces de Léo sont codées en dur dans la logique produit et dans les tests : un client n'emprunte jamais ces chemins",
+   "severity": "medium",
+   "category": "weak",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/tests/calage_v2_test.py",
+     "line": 67,
+     "quote": "ok(not U.eligible('faure') and not U.eligible('nelson04'), 'les pièces de Léo ne sont jamais dépliées')"
+    },
+    {
+     "file": "code/tools/unfold_piece.py",
+     "line": 90,
+     "quote": "\"\"\"Only pieces added through the library, never Léo's pieces of app/pieces.js.\"\"\""
+    },
+    {
+     "file": "code/tools/run_checks.py",
+     "line": 21,
+     "quote": "for rid, f, ch in [('cp', 'cp_split', SPLIT_ORGAN), ('southminster', 'southminster_split', SPLIT_ORCH), ('ahots', 'ahots_split', SPLIT_ORGAN), ('passy', 'passy_split', SPLIT_ORGAN)]:"
+    },
+    {
+     "file": "code/tools/tests/pupitre_pkg_test.py",
+     "line": 74,
+     "quote": "EXPECTED_NAMES = {'faure': 'Faure_Cantique-de-Jean-Racine_Tenor.pupitre',"
+    },
+    {
+     "file": "code/tools/tests/voices_test.mjs",
+     "line": 21,
+     "quote": "faure: ['Soprano', 'Alto', 'Tenor', 'Bass', 'Organ\\nor\\nPiano'],"
+    }
+   ],
+   "detail": "calage_v2_test.py:67 teste une règle produit « les pièces de Léo ne sont jamais dépliées » ; unfold_piece.eligible() distingue origin 'library'/'import' des pièces de pieces.js (:89-92). voices_test.mjs, recvoice_test.mjs, findnote_test.mjs, pianiste_fausses_notes_test.mjs, score_edits_test, pupitre_pkg_test bouclent sur PIECES de pieces.js. run_checks.py:21-32 liste nommément faure/nelson/loch avec leurs fichiers audio. Deux problèmes : (1) le produit a deux chemins (pièces intégrées vs bibliothèque) et la plupart des tests n'exercent que le premier, celui qu'un client n'aura pas ; (2) chaque test qui lit pieces.js meurt le jour où pieces.js est vidé pour la vente (make_friends.py le vide déjà, HANDOFF:225).",
+   "what_instead": "Faire passer trois pièces publiques par le chemin « bibliothèque » (import d'un MusicXML via build_piece.py dans un PUPITRE_DATA temporaire, comme ai_read_test.build_pupitre le fait :229-239) et faire tourner voices/recvoice/findnote/score_edits sur elles. Retirer de calage_v2_test l'assertion :67 (règle de Léo, pas du produit).",
+   "experiment": "",
+   "area_key": "tests",
+   "area": "Honnêteté des tests (code/tools/tests/, run_checks.py, simplicity_report.py, les lignes « headless, 0 erreur » du HANDOFF, les recettes)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "tests/monkeypatch-efface-l-integration",
+   "title": "Le monkey-patching du module testé efface l'intégration là où elle compte (remplacer / copier, création de pièce, lecteur OMR)",
+   "severity": "medium",
+   "category": "weak",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/tests/raccourcir_test.py",
+     "line": 162,
+     "quote": "L.run_cli = lambda cmd, spec, timeout=0: (synth.append(json.loads(spec)), {'rec': {...}, 'sha256': 'new-audio'})[-1]"
+    },
+    {
+     "file": "code/tools/tests/raccourcir_test.py",
+     "line": 242,
+     "quote": "L.create_piece = fake_create"
+    },
+    {
+     "file": "code/tools/tests/raccourcir_test.py",
+     "line": 231,
+     "quote": "L.store_original = lambda data, name, rights='moi': (made.update(xml=data.decode('utf-8'), name=name), ('b' * 64, ...))[-1]"
+    },
+    {
+     "file": "code/tools/tests/omr_cache_test.py",
+     "line": 33,
+     "quote": "L.describe = lambda tools, sha, meta, name, fresh=False: {'sha': sha, 'name': name, 'kind': 'score'}"
+    },
+    {
+     "file": "code/tools/tests/anchors_words_test.py",
+     "line": 109,
+     "quote": "A.app_path = lambda rel: rel"
+    }
+   ],
+   "detail": "raccourcir_test.py remplace L.run_cli, L.create_piece, L.store_original, L.write_json_atomic, L.originals_dir, L.original_meta et R.layout (:160-162, :230-242) : le chemin « copie = nouvelle pièce » — celui qui protège le travail de l'utilisateur quand couper en place est risqué — est testé avec une création de pièce factice qui ajoute un dict dans une liste. Si create_piece réel perd les droits, les enregistrements ou le calage à la main, le test ne le voit pas. omr_cache_test.py:32-34 remplace omr_mod, describe et run_cli ; anchors_words_test.py:109-110 remplace app_path/read_json. Ces fakes sont posés par affectation d'attribut de module sans restauration, et plusieurs tests partagent `os.environ['PUPITRE_DATA']`.",
+   "what_instead": "Pour raccourcir/structure_piece : un test d'intégration avec le vrai api_library.create_piece sur un PUPITRE_DATA temporaire (la mécanique existe dans pupitre_pkg_test.Sandbox) et un seul fake : run_cli (la synthèse audio). Vérifier après « copie » que la pièce d'origine a les mêmes octets (déjà fait :249) ET que la nouvelle pièce a ses droits, son dossier, sa pochette et pas de calage orphelin.",
+   "experiment": "",
+   "area_key": "tests",
+   "area": "Honnêteté des tests (code/tools/tests/, run_checks.py, simplicity_report.py, les lignes « headless, 0 erreur » du HANDOFF, les recettes)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "tests/images-synthetiques-vs-photos-reelles",
+   "title": "L'analyse d'image est testée sur des rectangles noirs dessinés et une page tournée de 4° ; Léo juge les vraies photos « complètement inventé »",
+   "severity": "medium",
+   "category": "oversold",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/tests/structure_test.py",
+     "line": 52,
+     "quote": "img[y + k * sp:y + k * sp + 2, x0:x1] = 0"
+    },
+    {
+     "file": "code/tools/tests/structure_test.py",
+     "line": 77,
+     "quote": "check(len(got) == 3, f'three systems found: {len(got)}')"
+    },
+    {
+     "file": "code/tools/tests/import_test.py",
+     "line": 107,
+     "quote": "rot = page.convert('RGB').rotate(4, expand=True, fillcolor=(90, 70, 55))"
+    },
+    {
+     "file": "01-HISTOIRE-ET-ETAT.md",
+     "line": 85,
+     "quote": "5 Oct, photos: \"complètement inventé, inutile\"; \"ne ressemble en rien à ma partition\""
+    }
+   ],
+   "detail": "structure_test.py §3 construit une page de 2000×1400 avec des portées = lignes de 2 px parfaitement horizontales, des « syllabes » = petits rectangles, et vérifie que systems_of_page trouve 3 systèmes voix+clavier (:49-82). import_test.py §flatten_photo prend une page blanche uniforme tournée de 4° sur un fond brun uni (:100-114). Aucune photo réelle (ombre, pli, perspective, JPEG) n'entre dans un test, alors que le zip contient trois pages Verdi imprimées en images. Les tests sont verts, le produit sur photos est jugé inutilisable par le seul utilisateur.",
+   "what_instead": "Mettre les images de donnees-exemple/verdi-otello dans fixtures/ et écrire un test « structure sur page réelle » : nombre de systèmes attendu (compté une fois à la main), rôle de chaque portée, nombre de lignes de paroles ; accepter 1 erreur sur 3 pages et la nommer. Ajouter une photo de téléphone (Mozart Ave verum imprimé puis photographié, domaine public) pour flatten_photo avec une tolérance explicite.",
+   "experiment": "Passer les trois PNG Verdi du zip dans si.systems_of_page et comparer au structure.json livré : c'est le test qui manque, il prend dix minutes à écrire.",
+   "area_key": "tests",
+   "area": "Honnêteté des tests (code/tools/tests/, run_checks.py, simplicity_report.py, les lignes « headless, 0 erreur » du HANDOFF, les recettes)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "tests/regle-2-ecoute-ajustee-sur-ses-8-cas",
+   "title": "Le « 6 sur 8 » de l'écoute est obtenu avec une règle écrite après avoir vu les cas qu'elle note",
+   "severity": "medium",
+   "category": "oversold",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "rapports/verdi-lecture-parfaite-2026-10-08/ecoute/e3b_regle2.py",
+     "line": 1,
+     "quote": "second rule for what may be CORRECTED (written after the eye check of the 21 « high » cases of rule 1, where the ear was right 7 times only)"
+    },
+    {
+     "file": "rapports/verdi-lecture-parfaite-2026-10-08/ecoute/RESULTATS.md",
+     "line": 15,
+     "quote": "**Deuxième règle, écrite après avoir vu ces cas**"
+    },
+    {
+     "file": "rapports/verdi-lecture-parfaite-2026-10-08/ecoute/RESULTATS.md",
+     "line": 159,
+     "quote": "donne pas mieux que 6 sur 8."
+    }
+   ],
+   "detail": "Le rapport est honnête sur le fait (la règle 2 est écrite après avoir vu les 21 cas où la règle 1 se trompait 14 fois), mais le chiffre « 6 sur 8 » qui en sort est ensuite cité comme un résultat. Une règle ajustée sur n cas puis notée sur ces mêmes n cas ne mesure rien ; avec 8 cas, un hold-out n'est même pas possible. La même pratique (règle écrite après lecture) est signalée dans calage-verite RESULTATS.md:37-38 (« Les règles automatiques de work/diag.py ont été réécrites après lecture »).",
+   "what_instead": "Geler la règle 2, puis la noter sur un autre extrait (les 3 pages Verdi du zip ont d'autres mesures chantées ; ou le Mozart) sans y retoucher. Écrire dans le rapport « ajustée sur ces cas : chiffre non mesurable » à la place de 6/8.",
+   "experiment": "Appliquer e3b_regle2.py tel quel à 8 nouvelles mesures jamais vues et publier le résultat, quel qu'il soit.",
+   "area_key": "tests",
+   "area": "Honnêteté des tests (code/tools/tests/, run_checks.py, simplicity_report.py, les lignes « headless, 0 erreur » du HANDOFF, les recettes)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "tests/handoff-compte-inflation-et-seuil-non-ecoute",
+   "title": "Le HANDOFF cite des comptes gonflés (pkg 1489/1490) et grave dans un test un seuil « pas écouté »",
+   "severity": "medium",
+   "category": "oversold",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/claude/HANDOFF.md",
+     "line": 236,
+     "quote": "tests pkg 1489 ok"
+    },
+    {
+     "file": "code/claude/HANDOFF.md",
+     "line": 560,
+     "quote": "Test neuf `tools/tests/anchors_far_words_test.py` (17 contrôles, 7 en échec avant) ... Seuil 0,75 s = un choix (mots justes de Loch jusqu'à 0,59 s), pas écouté."
+    },
+    {
+     "file": "code/tools/tests/anchors_far_words_test.py",
+     "line": 80,
+     "quote": "m6, _ = A.bend_words(smap, [(22.0, 22.4)], data, duration=DUR)"
+    },
+    {
+     "file": "code/tools/tests/anchors_far_words_test.py",
+     "line": 81,
+     "quote": "check('near (0.4 s): the note after it does not move'"
+    }
+   ],
+   "detail": "Le seuil FAR_S = 0,75 s qui décide si un mot posé entraîne la suite est, de l'aveu de l'entrée HANDOFF:560, « un choix … pas écouté » entre deux cas (Loch juste à 0,59 s, Verdi faux de plusieurs secondes). anchors_far_words_test.py:80-81 fige ce choix comme comportement attendu (0,4 s = la note seule bouge) : le test protège désormais une valeur devinée, et tout changement de seuil le cassera, ce qui dissuadera de le corriger. Les comptes « pkg 1489 ok » / « 1490 ok » (HANDOFF:236, :322) sont des produits par pièce et par audience ; ils donnent une impression de densité de preuve sans rapport avec le nombre de comportements vérifiés.",
+   "what_instead": "Mettre le seuil dans la fixture (`FAR_S` lu depuis anchors.py, pas écrit en dur dans le test) et marquer le test « encode un seuil non validé, voir HANDOFF 8 oct ». Décider le seuil par une écoute : 5 mots posés sur le Mozart avec un décalage artificiel de 0,3 / 0,6 / 0,9 / 1,5 s, écouter si la suite doit suivre. Dans HANDOFF, n'écrire que « N assertions distinctes ».",
+   "experiment": "Sur une pièce publique, poser un mot à 0,7 s puis à 0,8 s du calage : le comportement bascule entièrement (note seule / toute la suite). Écouter si une oreille perçoit une raison à cette falaise ; sinon remplacer le seuil par une transition continue.",
+   "area_key": "tests",
+   "area": "Honnêteté des tests (code/tools/tests/, run_checks.py, simplicity_report.py, les lignes « headless, 0 erreur » du HANDOFF, les recettes)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "tests/assertions-affaiblies-pour-passer",
+   "title": "Deux assertions ont été affaiblies pour passer : un `||` qui rend la vérification presque toujours vraie, et un test qui enlève un champ pour que l'égalité tienne",
+   "severity": "low",
+   "category": "weak",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/tests/score_edits_test.mjs",
+     "line": 60,
+     "quote": "ok(ids === C.xn + (r0.xml.match(/_c\\d+\"/g) || []).length || ids >= C.xn, `${p.id}: chaque note porte son id (${ids})`);"
+    },
+    {
+     "file": "code/tools/tests/raccourcir_test.py",
+     "line": 209,
+     "quote": "if back.get('trash') == []:"
+    },
+    {
+     "file": "code/tools/tests/raccourcir_test.py",
+     "line": 210,
+     "quote": "del back['trash']   # (the rename route gives every piece its empty Corbeille)"
+    }
+   ],
+   "detail": "score_edits_test.mjs:60 vérifie « chaque note porte son id » par `A || ids >= C.xn` : dès que le nombre d'ids est au moins le nombre de notes, c'est vert, même si des ids sont en double ou sur de mauvaises notes. raccourcir_test.py:207-211 veut « undo : la pièce est exactement comme avant » mais le chemin de renommage ajoute `trash: []` ; au lieu de documenter cet effet de bord dans le code produit, le test le supprime avant de comparer. Petits signes, mais c'est le réflexe « faire passer le test » plutôt que « faire dire au test la vérité ».",
+   "what_instead": "Remplacer :60 par deux assertions séparées (ids === xn + liées ; aucun id en double, déjà calculé en `dup` :32-33). Pour raccourcir : soit folder_change ne doit pas ajouter trash (corriger api_library), soit l'attente devient « identique sauf trash: [] » en clair.",
+   "experiment": "",
+   "area_key": "tests",
+   "area": "Honnêteté des tests (code/tools/tests/, run_checks.py, simplicity_report.py, les lignes « headless, 0 erreur » du HANDOFF, les recettes)",
+   "severity_original": "low",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "tests/aucune-reference-humaine-dans-le-zip",
+   "title": "Aucune sortie attendue du zip n'a été validée par un humain ; la seule vérité humaine (calage de Léo, 12 pièces, une voix) est hors zip et n'est pas une référence de lecture",
+   "severity": "high",
+   "category": "missing",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/tests/fixtures/calage_refs/bach.json",
+     "line": 58,
+     "quote": "made by eye (Claude, 25 Sep 2026)"
+    },
+    {
+     "file": "rapports/verdi-lecture-parfaite-2026-10-08/scripts/ref.py",
+     "line": 1,
+     "quote": "NOT checked by Léo"
+    },
+    {
+     "file": "code/tools/tests/anchors_words_test.py",
+     "line": 9,
+     "quote": "the start of each tenor note of verse 1 measured in the recording (pitch on the voices channel)"
+    },
+    {
+     "file": "code/tools/tests/voicetest_test.mjs",
+     "line": 84,
+     "quote": "const SINGERS = {"
+    },
+    {
+     "file": "rapports/calage-verite-2026-10-07/RESULTATS.md",
+     "line": 6,
+     "quote": "Vérité = ton calage à la main du 7 oct ... gelée dans tools/tests/fixtures/calage_bench.json."
+    },
+    {
+     "file": "03-INVENTAIRE.md",
+     "line": 79,
+     "quote": "Léo's hand alignment of 12 pieces on bought recordings (the benchmark truth). Times only, but derived from bought recordings: left out."
+    }
+   ],
+   "detail": "J'ai cherché dans chaque fichier qui a écrit la sortie attendue. Calage : Claude (by-eye) ou machine (anchors_words « truth » = hauteur détectée sur le canal voix). Lecture : Claude (ref.py, holdout.py), jamais relu par Léo ; les truth.mxl du testset ne sont pas dans le zip et aucun document ne dit qui les a vérifiés. Voix : des chanteurs synthétiques dessinés avec les mêmes paramètres (voix parlée, passage, tessiture) que le classifieur utilise (voicetest_test.mjs:84-91) — un modèle qui reconnaît ses propres créatures. Les « partitions finales » de Léo sont utilisées par lui en répétition, donc exposées à une oreille humaine, mais elles ne sont ni dans le zip ni déclarées comme vérité de lecture. Hors zip, la seule vérité humaine est le calage à la main de Léo (2 099 notes de ténor, 12 pièces d'un même éditeur de pistes). Conclusion : rien de ce que la suite de tests attend n'a été regardé ou écouté par quelqu'un d'autre que l'auteur du code.",
+   "what_instead": "Constituer en une soirée un « jeu d'or humain » public : (1) les 3 pages Verdi du zip : Léo valide avec la Loupe 30 mesures chantées (image + notes + syllabes, oui/non) ; (2) le Mozart Ave verum : 10 mesures de calage tapées à l'oreille par deux personnes, écart entre elles = tolérance ; (3) 20 syllabes découpées à la main pour paroles_test. Tout cela tient dans fixtures/, est libre de droits, et devient l'oracle de structure_test, calage_sanity_test et paroles_test.",
+   "experiment": "Demander à un deuxième choriste de taper les barres du Mozart : si ses temps diffèrent de ceux de Léo de plus de 0,25 s sur plus de 10 % des barres, la « vérité » à ±0,25 s n'est pas une vérité et les seuils des bancs doivent être élargis.",
+   "area_key": "tests",
+   "area": "Honnêteté des tests (code/tools/tests/, run_checks.py, simplicity_report.py, les lignes « headless, 0 erreur » du HANDOFF, les recettes)",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "data/backup-aucune-copie-hors-mac",
+   "title": "Aucune copie hors du Mac : un seul disque porte tout le travail, et le miroir prévu n'est pas configuré",
+   "severity": "high",
+   "category": "missing",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/serve.py",
+     "line": 101,
+     "quote": "a second copy of every correction, outside this Mac (e.g. a Google Drive / iCloud folder): write that folder's path in tools/backup_dir.txt. Silent if the folder can't be reached."
+    },
+    {
+     "file": "code/TODO-LEO.md",
+     "line": 8,
+     "quote": "Aujourd'hui, tes corrections de Calage n'existent que sur ce Mac."
+    },
+    {
+     "file": "code/STATUS.md",
+     "line": 114,
+     "quote": "No off-Mac copy yet. Corrections live on one Mac."
+    },
+    {
+     "file": "code/tools/serve.py",
+     "line": 117,
+     "quote": "shutil.copy2(path, os.path.join(d, sub, os.path.basename(path)))"
+    },
+    {
+     "file": "code/tools/build_product.py",
+     "line": 12,
+     "quote": "copied to ~/Library/Application Support/Pupitre/Pupitre-data at first start"
+    }
+   ],
+   "detail": "[verified] Le mécanisme de miroir existe (mirror() dans serve.py) mais il dépend d'un fichier tools/backup_dir.txt absent du zip, que TODO-LEO.md et STATUS.md confirment vide depuis le 26 septembre. Même configuré, ce miroir ne copie que le DERNIER état de corrections/ et de store/<area>/ (shutil.copy2 par-dessus la copie précédente, ligne 117) : pas l'historique, pas recordings.json, pas pieces/, pas library/originals, pas les sons. Les versions (versions/) et le git vivent sur le même disque. Pour un client, le produit range les données dans ~/Library/Application Support (build_product.py:12-13) : c'est encore un seul disque, et un dossier que personne ne pense à sauvegarder. La règle 5 du brief (« never lose user work ») n'est pas tenable avec une seule copie physique, quel que soit le soin mis dans history/. [inferred] Le miroir est aussi silencieux en cas d'échec (print côté serveur, rien dans l'app) : l'utilisateur ne saura jamais que sa copie n'est plus faite.",
+   "what_instead": "Tenir la promesse avec ce qui existe déjà : (1) faire de l'export .pupitre « pour moi » une vraie sauvegarde complète (voir export-oublie-reglages) et proposer dans Mon classeur un bouton « Sauvegarder tout » qui écrit un .pupitre de session dans un dossier choisi une fois (iCloud Drive, OneDrive, clé) ; (2) brancher backup_dir dans l'app (api_library status + un réglage general.json « dossier de copie »), plus une ligne d'état visible (« copie du 8 oct. 16:40 » ou « pas de copie ») ; (3) faire copier par mirror() tout Pupitre-data/store, corrections (avec history/), recordings.json et pieces/data, pas seulement le dernier fichier écrit.",
+   "experiment": "Débrancher le Mac du réseau, écrire backup_dir.txt vers un dossier inexistant, corriger un calage : constater que l'app affiche « ✓ sauvegardé » (app.js:5000) alors qu'aucune copie n'existe nulle part.",
+   "area_key": "data",
+   "area": "Sécurité des données (corrections, partitions corrigées, versions, corbeille, « remplacer ou copier »)",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "data/export-oublie-reglages",
+   "title": "« Sauvegarder » (export .pupitre) oublie store/reglages : retouches du piano, notes ≠, boucles, mix, transposition n'y sont pas",
+   "severity": "high",
+   "category": "data-loss",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/api_library.py",
+     "line": 755,
+     "quote": "put('score/edits.json', ap('store', 'score_edits', entry['id'] + '.json'))"
+    },
+    {
+     "file": "code/tools/api_library.py",
+     "line": 806,
+     "quote": "put(f'calage/{sync_base}.json', ap('corrections', sync_rel.replace('sync/', '', 1)))"
+    },
+    {
+     "file": "code/app/userdata.js",
+     "line": 3,
+     "quote": "What a singer would be sad to lose (piano retouches, « ≠ » notes, the voice mix, the other voices on the piano, loops, tuning, chosen recording and voice, piano sound, Chanter settings…)"
+    },
+    {
+     "file": "code/docs/DONNEES.md",
+     "line": 24,
+     "quote": "Réglages du chanteur (nouveau) | store/reglages/general.json, piece_<id>_<h>.json, enr_<sync>_<h>.json"
+    },
+    {
+     "file": "code/app/classeur.js",
+     "line": 3,
+     "quote": "#clsFolderHead (name, Ouvrir / Sauvegarder / Ajouter des fichiers / Ranger)"
+    }
+   ],
+   "detail": "[verified] piece_parts() (api_library.py:711-830) met dans le .pupitre la partition, l'original, score/edits.json, les notes, pron, la fiche, les images, l'accompagnement IA, les sync, les corrections de calage, les roll, les diag, les sons et les PDF. Le mot « reglages » n'apparaît nulle part dans api_library.py (grep : 0 occurrence). Or depuis le 2 octobre tout ce que userdata.js:3 décrit comme « ce qu'un chanteur serait triste de perdre » vit dans store/reglages/piece_*.json et enr_*.json. Le bouton « Sauvegarder » du classeur est la seule sauvegarde qu'un client peut faire lui-même ; il croit tout emporter, et à la réimportation sur un autre ordinateur (ou après un disque mort) ses retouches du piano, ses notes ≠, ses boucles gardées et ses mix ont disparu. C'est exactement le type de perte que la revue « regard neuf » du 1er octobre avait fait corriger côté stockage (AVIS.md:24-25, 107-112) : le stockage a été réparé, l'export ne l'a pas suivi.",
+   "what_instead": "Dans piece_parts() ajouter put('reglages/piece.json', ap('store','reglages', docName('piece', pid)+'.json')) et, par enregistrement, put(f'reglages/enr_{sync_base}.json', …) en recalculant le nom avec la même règle que userdata.js docName (slug + FNV-1a 6 hex, à porter en Python dans api_library). À l'import (import_piece, ~1541-1560) fusionner par clé avec mergeKeys (règle du plus récent) au lieu d'écraser. Ajouter un test dans tools/tests/import_test.py : exporter une pièce avec un pianiste.edit et un altNotes, réimporter dans un PUPITRE_DATA vide, vérifier les deux clés.",
+   "experiment": "Exporter une pièce qui a une retouche du piano (pianiste.edit.<id>) et une note ≠, ouvrir le .pupitre avec unzip -l : aucun fichier reglages/ ; importer dans un Pupitre-data vide : la retouche est absente.",
+   "area_key": "data",
+   "area": "Sécurité des données (corrections, partitions corrigées, versions, corbeille, « remplacer ou copier »)",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "data/score-edits-dernier-ecrivain-gagne",
+   "title": "Les corrections de la partition (score_edits) : dernier écrivain gagne, sans X-Base-Rev ni fusion, alors que DONNEES.md promet « union des edits par id »",
+   "severity": "high",
+   "category": "data-loss",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/app/app.js",
+     "line": 7925,
+     "quote": "const r = await fetch(seUrl(doc.piece), { method: 'PUT', body: JSON.stringify(doc, null, 1), headers: { 'Content-Type': 'application/json' } });"
+    },
+    {
+     "file": "code/app/app.js",
+     "line": 7916,
+     "quote": "if (local && (!disk || (local.savedAt || 0) > (disk.savedAt || 0))) {"
+    },
+    {
+     "file": "code/tools/serve.py",
+     "line": 173,
+     "quote": "if base_rev is not None and isinstance(cur, dict) and cur.get('rev') is not None:"
+    },
+    {
+     "file": "code/docs/DONNEES.md",
+     "line": 23,
+     "quote": "Corrections de la partition | store/score_edits/<pièce>.json (+ history/) | … | union des edits par id"
+    },
+    {
+     "file": "code/app/score-edits.js",
+     "line": 838,
+     "quote": "export function newerDoc(a, b) {"
+    }
+   ],
+   "detail": "[verified] writeScoreEditsDisk (app.js:7924-7927) envoie le document entier sans en-tête X-Base-Rev ; côté serveur la détection de conflit n'existe que si base_rev est fourni (serve.py:173-175). readScoreEditsDoc (7916-7922) et newerDoc (score-edits.js:838-842) choisissent un document ENTIER par savedAt : il n'y a aucune union par id d'edit nulle part dans le code. Scénario concret, documenté comme habitude de Léo (« Two windows on the same calage (Léo, 25 Sep) », app.js:4884) : fenêtre A ajoute une correction de note, fenêtre B, ouverte avant, en ajoute une autre et écrit son document sans la première → la correction de A n'est plus que dans history/, invisible, et toutes les corrections de Calage que A avait fait suivre (followAllRecordings) pointent sur un état de partition qui n'existe plus. Même chose entre un navigateur revenu de hors-ligne et un autre qui a écrit entre-temps : le perdant n'a jamais touché le disque, donc n'est même pas dans history/. Ce sont précisément les corrections « sacrées » de la règle 2 du CLAUDE.md.",
+   "what_instead": "(1) Dans writeScoreEditsDisk, envoyer 'X-Base-Rev': doc.rev ?? '' et garder le rev reçu dans le doc local ; (2) sur 409, fusionner : union des edits par id (un edit déjà présent garde l'état le plus récent de off/undone par offAt/at), puis ré-émettre, comme userdata.js save() le fait déjà ; écrire cette fonction mergeEdits(a, b) dans score-edits.js (pur, testable) et l'appeler aussi dans readScoreEditsDoc à la place de « le plus récent gagne » ; (3) un test dans score_edits_test.mjs : deux documents divergents → union, aucun id perdu.",
+   "experiment": "Ouvrir la même pièce dans deux onglets, corriger une note dans chacun, recharger : l'un des deux edits a disparu de store/score_edits/<id>.json (il est dans history/ seulement).",
+   "area_key": "data",
+   "area": "Sécurité des données (corrections, partitions corrigées, versions, corbeille, « remplacer ou copier »)",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "data/portee-par-voix-replace-ignore-reglages-et-undo",
+   "title": "« Une portée par voix » en mode replace : « sûr » ignore les réglages par pièce (clés de voix et de notes), replace est choisi d'office, et le retour arrière ne regarde pas les corrections de Calage faites depuis",
+   "severity": "high",
+   "category": "risk",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/structure_piece.py",
+     "line": 400,
+     "quote": "def calage_risks(old, new, recordings, corrections_of, sync_of, score_edits=None, pending=0):"
+    },
+    {
+     "file": "code/tools/structure_piece.py",
+     "line": 688,
+     "quote": "mode = 'replace' if c['safe'] else 'copy'"
+    },
+    {
+     "file": "code/app/portees.js",
+     "line": 57,
+     "quote": "const j = await call('structure-apply', { piece: id, mode: c?.safe ? 'replace' : 'copy' });"
+    },
+    {
+     "file": "code/tools/structure_piece.py",
+     "line": 373,
+     "quote": "key = old_sung[v][0] if reuse else f'V{v + 1}'"
+    },
+    {
+     "file": "code/app/userdata.js",
+     "line": 31,
+     "quote": "{ re: /^pianiste\\.edit\\.(.+?)(\\.avant)?$/, scope: 'piece', what: 'retouches du piano (différences v2) et leur sauvegarde .avant' },"
+    },
+    {
+     "file": "code/tools/structure_piece.py",
+     "line": 788,
+     "quote": "ed = read_json(P.STORE / 'score_edits' / f'{pid}.json') or {}"
+    }
+   ],
+   "detail": "[verified] calage_risks (400-436) ne lit que les fichiers de corrections, les cartes sync et score_edits. Il ne lit jamais store/reglages/piece_<id>*.json ni enr_*.json, qui contiennent des clés nommant des voix et des notes de l'ANCIENNE partition : pianiste.edit (« del: ['T|12|60'] », DONNEES.md:59), altNotes (« T|3|64 »), otherVoices ({S: 42}), accBias, voice.<pièce>, passages (boucles en noires), resume. Quand replace change les clés de voix (voice_mapping ligne 373 : V1, V2… dès que le nombre de voix chantées diffère) ou les notes (greffe homr, deux_graft 300-318), ces réglages restent sur le disque mais ne désignent plus rien : du point de vue de l'utilisateur, ses retouches et ses notes ≠ ont disparu sans un mot. Le mode est choisi par la page (portees.js:57) : le bouton dit « Faire », pas « Remplacer », et l'utilisateur ne choisit pas entre copie et remplacement. Le retour arrière (undo, 786-814) refuse dès qu'un edit de partition est actif et ne vérifie pas les corrections de Calage faites sur le nouvel axe depuis le remplacement : un replace sans enregistrement réel (axe différent autorisé, 430-431 ne s'applique qu'avec un sync), puis un enregistrement ajouté et calé à la main, puis « Revenir à la lecture d'avant » → les corrections restent écrites sur 309 mesures pour une pièce qui en a 308 ; l'app les gardera « pas appliquées » (app.js:4951). [inferred] Le test structure_test.py ne couvre aucun de ces trois cas (il teste la réparation, pas le remplacement d'une pièce avec réglages).",
+   "what_instead": "(1) Dans calage_risks, lire store/reglages/piece_<docName>.json et enr_<docName>.json (porter docName en Python), et compter comme risque toute clé pianiste.edit / altNotes / otherVoices / accBias / passages dont les clés de voix ou de notes ne sont pas dans note_keys(new) ou vm['parts'] ; (2) par défaut mode 'copy' toujours, et un vrai choix dans portees.js (« Remplacer cette pièce » / « Faire une nouvelle pièce ») avec la phrase des risques visible, pas en title= ; (3) undo : refuser aussi si un fichier corrections/lib_<pid>_*.json ou up_<pid>_*.json a un savedAt postérieur à app.structure.at, ou proposer la copie ; (4) un test : pièce avec pianiste.edit + altNotes → replace refusé ou réglages traduits.",
+   "experiment": "Sur une pièce lue d'un PDF sans enregistrement réel, faire une retouche du piano et une note ≠, puis « Une portée par voix › Faire » : regarder store/reglages/piece_*.json (toujours là) et l'écran (plus rien).",
+   "area_key": "data",
+   "area": "Sécurité des données (corrections, partitions corrigées, versions, corbeille, « remplacer ou copier »)",
+   "severity_original": "high",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "data/retirer-enregistrement-sans-retour",
+   "title": "« Retirer » un enregistrement ajouté déplace ses fichiers dans removed/ ; aucun chemin de retour dans l'app",
+   "severity": "medium",
+   "category": "data-loss",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/serve.py",
+     "line": 658,
+     "quote": "up = next((x for x in pr['added'] if x['id'] == b['rec']), None)"
+    },
+    {
+     "file": "code/tools/serve.py",
+     "line": 661,
+     "quote": "for rel in (up['file'], up['sync'], up['sync'].replace('sync/', 'roll/'), up['sync'].replace('sync/', 'roll/').replace('.json', '.png')):"
+    },
+    {
+     "file": "code/tools/serve.py",
+     "line": 655,
+     "quote": "if u.path == '/api/restore':\n                    pr['hidden'] = [x for x in pr['hidden'] if x != b['rec']]"
+    },
+    {
+     "file": "code/app/app.js",
+     "line": 3819,
+     "quote": "Retirer « ${rec.label} » de la liste ?${rec.uploaded ? ' (le fichier est mis de côté, pas effacé)' : ' (tu pourras le réafficher)'}"
+    },
+    {
+     "file": "code/app/classeur.js",
+     "line": 8,
+     "quote": "NOTHING is deleted or moved: the Corbeille is a list"
+    }
+   ],
+   "detail": "[verified] Deux « corbeilles » coexistent avec deux comportements. Le classeur (api_library folder_change, 2852-2856) ne fait que cacher. L'ancien « Retirer » de l'écran d'écoute (app.js:3815-3831 → POST /api/remove) retire l'entrée de recordings.json et déplace le son, le sync, le roll et le png dans Pupitre-data/removed/removed_<rec>/ (move_away, 316-322). /api/restore (655-656) ne sait que dé-cacher une pièce intégrée : rien dans l'app ne peut remettre un enregistrement ajouté. Le fichier de corrections de ce calage reste dans corrections/, orphelin. Un client qui clique « Retirer » par erreur sur l'enregistrement qu'il a calé à la main pendant deux heures a « tout perdu » au sens de la règle 3 (il faut un développeur pour aller dans removed/). Le message « mis de côté, pas effacé » est vrai mais inutile sans bouton pour revenir.",
+   "what_instead": "Faire pointer confirmRemove sur la route trash de api_library (comme classeur.js:418 trashRec) et retirer /api/remove du code mort ; ou, si on garde move_away, ajouter dans /api/restore le chemin inverse (lire removed/removed_<rec>/ et remettre les fichiers + l'entrée added) et l'exposer dans la Corbeille du classeur.",
+   "experiment": "Ajouter un enregistrement, le caler, cliquer « Retirer » dans l'écran d'écoute, puis chercher dans l'app comment le remettre : il n'y a rien.",
+   "area_key": "data",
+   "area": "Sécurité des données (corrections, partitions corrigées, versions, corbeille, « remplacer ou copier »)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "data/historique-corrections-plafonne-1000",
+   "title": "« Rien n'est jamais effacé » est faux : l'historique des corrections est tronqué à 1000 par os.remove",
+   "severity": "medium",
+   "category": "wrong",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/serve.py",
+     "line": 743,
+     "quote": "for f in old[:-1000]:  # the last 1000 saves of each calage\n                os.remove(f)"
+    },
+    {
+     "file": "code/tools/serve.py",
+     "line": 742,
+     "quote": "old = sorted(glob.glob(os.path.join(HISTORY, f'{name[:-5]}.*.json')))"
+    },
+    {
+     "file": "code/docs/DONNEES.md",
+     "line": 12,
+     "quote": "Rien n'est jamais effacé : chaque version précédente d'un document est gardée dans history/."
+    },
+    {
+     "file": "code/app/app.js",
+     "line": 4989,
+     "quote": "el.title = 'Rien n’est effacé : la version que tu ne gardes pas reste dans l’Historique.';"
+    },
+    {
+     "file": "code/app/app.js",
+     "line": 4930,
+     "quote": "}, 400);"
+    }
+   ],
+   "detail": "[verified] pushToDisk envoie une sauvegarde 400 ms après chaque geste (app.js:4906-4930) : une séance de calage à la main produit facilement plusieurs centaines de fichiers d'historique ; à 1000 les plus anciens sont effacés, donc la version « comme à l'ouverture » d'une longue séance peut ne plus exister dans /api/history. Le texte de l'app (4989), DONNEES.md:12 et CLAUDE.md:25 disent le contraire ; STATUS.md:51 reconnaît « 200–1000 history entries ». Le store (store_write) ne plafonne pas, seules les corrections — les données les plus sacrées — le font. [verified, mineur] Le glob de la ligne 742 n'échappe pas le nom et n'exige pas le format d'horodatage, contrairement à store_history_files (138-141) : avec les noms d'aujourd'hui (sans point) c'est sans effet, mais la version sûre existe quelques lignes plus haut et n'a pas été reprise ici.",
+   "what_instead": "Supprimer l'effacement ; si la place inquiète, compacter : garder toutes les sauvegardes des 24 dernières heures, puis une par heure, puis une par jour, en déplaçant (jamais os.remove) les autres vers history/archive/ ou en les écrivant dans un <name>.log.jsonl comme REVUE.md §4.4 le proposait. Réutiliser store_history_files() pour le glob. Mettre à jour DONNEES.md et le title de l'app en conséquence.",
+   "experiment": "Un script qui PUT 1100 corrections différentes sur /corrections/essai.json : compter les fichiers dans corrections/history/ (1000) et vérifier que la 1re sauvegarde n'est plus dans /api/history?name=essai.",
+   "area_key": "data",
+   "area": "Sécurité des données (corrections, partitions corrigées, versions, corbeille, « remplacer ou copier »)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "data/recordings-json-deux-ecrivains-sans-historique",
+   "title": "recordings.json : deux écrivains, deux verrous, un seul garde l'historique, et un fichier illisible est réécrit vide",
+   "severity": "medium",
+   "category": "data-loss",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/serve.py",
+     "line": 297,
+     "quote": "def save_registry(r):\n    write_json(REGISTRY, r, indent=1, ensure_ascii=False)"
+    },
+    {
+     "file": "code/tools/serve.py",
+     "line": 282,
+     "quote": "except (OSError, ValueError):\n        return {'pieces': {}}"
+    },
+    {
+     "file": "code/tools/serve.py",
+     "line": 641,
+     "quote": "r = registry()\n                        pr = r['pieces'].setdefault(j['piece'], {'added': [], 'hidden': []})"
+    },
+    {
+     "file": "code/tools/api_library.py",
+     "line": 2752,
+     "quote": "if old is not None:  # the previous one is kept, like every store file"
+    },
+    {
+     "file": "code/tools/api_library.py",
+     "line": 2882,
+     "quote": "with lock:\n            r = _registry()"
+    }
+   ],
+   "detail": "[verified] recordings.json est la liste des enregistrements ajoutés et cachés : c'est une donnée de l'utilisateur. serve.py l'écrit depuis /api/accept et /api/remove (641-644, 653-665) via save_registry, sans verrou et sans copie dans history/ ; api_library.py l'écrit depuis rename/trash/untrash sous son propre lock avec une copie dans store/library/history/ (2750-2756). Les deux chemins font lire-modifier-écrire : une acceptation de job (fil HTTP A) et une mise à la corbeille (fil HTTP B) peuvent se croiser, le dernier écrit gagne, et si c'est serve.py il ne laisse aucune trace. Pire : si le fichier est illisible (JSON tronqué par un disque plein, un ancien demi-fichier — la revue du 1er octobre l'a vu, REVUE.md:61), registry() renvoie {'pieces': {}} et la prochaine action l'écrit tel quel : tous les enregistrements ajoutés de toutes les pièces disparaissent de la liste, et côté api_library la copie d'historique n'est pas faite non plus puisque old est None. Les fichiers audio restent sur le disque, mais la règle 3 s'applique : un client ne peut pas reconstruire la liste.",
+   "what_instead": "Un seul écrivain : faire passer /api/accept, /api/remove et /api/restore par api_library._save_registry (sous le même lock, avec historique), ou mieux par tools.store_write('library', 'recordings.json', …) après avoir déplacé le fichier dans store/library/. Ne jamais écrire par-dessus un fichier qu'on n'a pas su lire : si read_json échoue, copier d'abord le fichier illisible dans history/<nom>.<stamp>.illisible.json et refuser l'écriture (409) tant que l'app n'a pas été prévenue.",
+   "experiment": "Écrire « { » dans Pupitre-data/recordings.json, cliquer « Retirer » sur un enregistrement : recordings.json ne contient plus que cette pièce, les autres ajouts ont disparu, et history/ n'a pas de copie du fichier cassé.",
+   "area_key": "data",
+   "area": "Sécurité des données (corrections, partitions corrigées, versions, corbeille, « remplacer ou copier »)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "data/versions-restore-ecrase-recordings-et-notes",
+   "title": "versions.py restore (sans --corrections) écrase quand même recordings.json et pieces/data : des données de l'utilisateur classées « code »",
+   "severity": "medium",
+   "category": "risk",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/versions.py",
+     "line": 43,
+     "quote": "[(P.DATA, p, DATA_TAG) for p in ('pieces/data/**/*.json', 'corrections/*.json', 'store/**/*.json', 'recordings.json')]"
+    },
+    {
+     "file": "code/tools/versions.py",
+     "line": 44,
+     "quote": "LEO_DATA = ('corrections/', 'store/')  # restored only with --corrections"
+    },
+    {
+     "file": "code/tools/versions.py",
+     "line": 140,
+     "quote": "if leo and not corrections:  # Léo's data\n            continue\n        os.makedirs(dst.parent, exist_ok=True)\n        shutil.copy2(f, dst)"
+    },
+    {
+     "file": "code/tools/versions.py",
+     "line": 97,
+     "quote": "new = re.sub(r'<!--ver-->.*?<!--/ver-->', f'<!--ver-->{line}<!--/ver-->', html)\n    if new != html:\n        open(idx, 'w', encoding='utf-8').write(new)"
+    }
+   ],
+   "detail": "[verified] Un `restore vNNN` « code seulement » recopie aussi Pupitre-data/recordings.json (la liste des enregistrements ajoutés/cachés) et pieces/data/**/*.json (les notes de chaque pièce, y compris les fichiers .structure.json et .court.json créés par les outils du 8 octobre) à l'état de la version : les enregistrements ajoutés depuis cette version disparaissent de la liste, les pièces créées depuis gardent leur entrée dans library.json (non restauré) mais leurs notes peuvent être absentes ou anciennes. La sauvegarde automatique faite avant (ligne 133) permet à un développeur de récupérer, pas à l'app. Les agents utilisent restore pour revenir sur du code (CLAUDE.md:31), donc le cas est réel sur le Mac de Léo. [verified, mineur] stamp_intro réécrit app/index.html sans fichier temporaire (97-99) et save() écrit version.json par open() non fermé (116) : un crash pendant « save » peut laisser l'index.html du produit à moitié écrit.",
+   "what_instead": "Mettre recordings.json et pieces/data/ dans LEO_DATA (restaurés seulement avec --corrections), ou mieux séparer en deux commandes explicites : restore-code et restore-data. Avant d'écraser une donnée, copier l'état courant dans son history/ (pas seulement dans la version automatique). Écrire index.html et version.json via un tmp + os.replace.",
+   "experiment": "Ajouter un enregistrement, puis `versions.py save x` ; ajouter un second enregistrement ; `versions.py restore vX` : le second n'est plus dans recordings.json.",
+   "area_key": "data",
+   "area": "Sécurité des données (corrections, partitions corrigées, versions, corbeille, « remplacer ou copier »)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "data/trois-regles-plus-recent-gagne-perdant-jete",
+   "title": "Trois « le plus récent gagne » différents (corrections, score_edits, api.files) ; le perdant qui n'a jamais atteint le disque est jeté, sans historique",
+   "severity": "medium",
+   "category": "risk",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/app/app.js",
+     "line": 4959,
+     "quote": "if ((!same || !sameV) && (d.savedAt || 0) > localAt) { // the file is newer: take it\n      if (d.edit) store.set(editKey(), d.edit); else store.del(editKey());"
+    },
+    {
+     "file": "code/app/app.js",
+     "line": 8251,
+     "quote": "const localNewer = !disk || at(local) > at(disk) || (dirty && at(disk) <= at(local));\n    if (!localNewer) { if (dirty) store.del(fileDirtyKey(area, name)); return disk; }"
+    },
+    {
+     "file": "code/app/app.js",
+     "line": 8231,
+     "quote": "A browser copy that never reached the disk (server down at the time) wins over an older disk file"
+    },
+    {
+     "file": "rapports/revue-code-2026-10-01/REVUE.md",
+     "line": 147,
+     "quote": "three different « newest wins » rules written three times (`pullFromDisk`, `readScoreEditsDoc`, `files.get`) with slightly different semantics"
+    },
+    {
+     "file": "code/docs/DONNEES.md",
+     "line": 158,
+     "quote": "`api.files` (documents entiers des modules) et `api.store` (clés, via `userdata.js`) sont les deux seules portes vers le stockage"
+    }
+   ],
+   "detail": "[verified] La revue du 1er octobre demandait une seule API de documents (REVUE.md:160) ; au 8 octobre il y a toujours trois chemins : pushToDisk/pullFromDisk pour les corrections (4902-4977), readScoreEditsDoc/writeScoreEditsDoc (7906-7932) et files.get/put (8238-8272). DONNEES.md:158 affirme « deux seules portes », ce qui est faux pour les corrections. Les trois jettent le perdant quand le disque est plus récent : files.get efface le drapeau dirty et retourne le disque (8252), pullFromDisk remplace edit.<sync> dans le navigateur (4960) sans backupDraft(), readScoreEditsDoc rend le disque (7922). Un travail fait hors-ligne (serveur endormi, règle fréquente sur ce Mac chargé : CLAUDE.md:40-41) puis dépassé par une écriture d'une autre fenêtre n'existe alors plus nulle part : il n'était pas sur le disque, donc pas dans history/, et il vient d'être écrasé dans localStorage. Le commentaire 8231-8233 (« nothing saved offline is ever lost ») est donc inexact.",
+   "what_instead": "Une seule fonction docs.sync(area, name, local, disk, merge) dans un module pur (comme score-edits.js), avec une règle de fusion par type (corrections : document entier mais le perdant est poussé dans `versions` du fichier avant d'être remplacé ; score_edits : union par id ; réglages : mergeKeys déjà écrite) et un test Node. En attendant : dans les trois chemins, quand le disque gagne sur une copie locale différente, pousser d'abord la copie locale dans history/ via un PUT marqué (ou dans `versions` pour les corrections) avant de la remplacer.",
+   "experiment": "Arrêter serve.py, corriger un calage dans l'onglet A, redémarrer serve.py, sauver une autre correction depuis l'onglet B, recharger A : la correction de A n'est ni sur le disque, ni dans history/, ni dans A.",
+   "area_key": "data",
+   "area": "Sécurité des données (corrections, partitions corrigées, versions, corbeille, « remplacer ou copier »)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "data/indexeddb-prises-navigateur-seul",
+   "title": "Les prises de « Chanter » et de « Mes prises », les pièces du Lecteur et ses corrections vivent dans IndexedDB du navigateur : hors versions, hors sauvegarde, hors export",
+   "severity": "medium",
+   "category": "data-loss",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/app/train.js",
+     "line": 2680,
+     "quote": "// ================= 12. storage (IndexedDB « pupitre-train », list in localStorage) ================="
+    },
+    {
+     "file": "code/app/prises.js",
+     "line": 9,
+     "quote": "// Kept in this browser only (IndexedDB 'pupitre-prises'), per piece and recording; nothing is sent anywhere."
+    },
+    {
+     "file": "code/app/lecteur.js",
+     "line": 169,
+     "quote": "// writes: a Calage or a module file (score corrections, marks…) stays in this browser"
+    },
+    {
+     "file": "code/docs/DONNEES.md",
+     "line": 28,
+     "quote": "Prises (Chanter, Mes prises) | IndexedDB pupitre-train, pupitre-prises (sons) ; la liste dans reglages/general.json (train.takes) | PCM / webm | id de prise | local par choix (lourd)"
+    },
+    {
+     "file": "code/app/userdata.js",
+     "line": 56,
+     "quote": "{ re: /^train\\.takes$/, scope: 'general', what: 'Chanter : la liste de mes prises (les sons restent dans ce navigateur)' },"
+    }
+   ],
+   "detail": "[verified] Les prises (l'utilisateur qui s'enregistre en chantant, jusqu'à 300 Mo, train.js:2700-2703) sont le travail le plus personnel du produit et ne sont dans aucun fichier de Pupitre-data : un profil vidé, une fenêtre privée, un autre navigateur, ou simplement un autre PORT (le serveur sur 8791 au lieu de 8766 = une autre origine) et elles n'existent plus. La liste train.takes, elle, part sur le disque (userdata.js:56) : après un changement d'origine, l'app a une liste de prises dont les sons manquent — [inferred] état incohérent visible. Dans le Lecteur (sans serveur), même les corrections de calage et de partition sont écrites dans IndexedDB (lecteur.js:169-181) et ne rejoignent jamais Pupitre-data. « Local par choix (lourd) » dans DONNEES.md est un choix de confort du développeur, pas de l'utilisateur, qui n'en est pas prévenu avant de perdre.",
+   "what_instead": "Écrire les prises comme des fichiers via le serveur (PUT /store-bin/prises/<id>.pcm ou un dossier Pupitre-data/prises/<pièce>/, écrit en tmp + replace, listé dans general.json comme aujourd'hui), avec IndexedDB en cache seulement, comme userdata.js l'a fait pour les réglages ; les inclure dans l'export « pour moi » et dans le miroir. Pour le Lecteur, proposer « Rapporter mes corrections » (export .pupitre des corrections faites hors serveur).",
+   "experiment": "Enregistrer une prise sur http://127.0.0.1:8766/, puis ouvrir http://localhost:8766/ : la liste des prises est là (disque), aucun son ne joue.",
+   "area_key": "data",
+   "area": "Sécurité des données (corrections, partitions corrigées, versions, corbeille, « remplacer ou copier »)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "data/ids-derives-du-titre-ocr",
+   "title": "L'identifiant d'une pièce = slug du titre OCR tronqué à 40 caractères, à vie ; tous les fichiers de l'utilisateur en dépendent",
+   "severity": "medium",
+   "category": "risk",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/api_library.py",
+     "line": 261,
+     "quote": "t = re.sub(r'[^a-z0-9]+', '-', t).strip('-')[:40].strip('-')"
+    },
+    {
+     "file": "code/tools/api_library.py",
+     "line": 3330,
+     "quote": "pid = unique_id(lib, title)"
+    },
+    {
+     "file": "donnees-exemple/formats/corrections_verdi-calage-a-la-main.json",
+     "line": 2,
+     "quote": "\"sync\": \"sync/up_suspended-in-front-of-a-statue-of-the-vi_up20261008125952.json\","
+    },
+    {
+     "file": "code/tools/api_library.py",
+     "line": 2831,
+     "quote": "p['title'] = name\n                if p.get('app'):\n                    p['app']['title'] = name"
+    },
+    {
+     "file": "code/tools/api_library.py",
+     "line": 392,
+     "quote": "ids |= {os.path.splitext(os.path.basename(f))[0] for f in glob.glob(ap('data', '*.json'))}"
+    },
+    {
+     "file": "code/docs/DONNEES.md",
+     "line": 143,
+     "quote": "Les corrections du Calage : passer la clé de l'adresse `sync/…` au sha256 du son"
+    }
+   ],
+   "detail": "[verified] Le Verdi de Léo a pour id « suspended-in-front-of-a-statue-of-the-vi » : une didascalie lue par Audiveris est devenue le nom de lib/<id>/, data/<id>.json, audio/lib/<id>/, sync/up_<id>_…, corrections/up_<id>_…, store/score_edits/<id>.json et store/reglages/piece_<id>_<hash>.json (library.json de l'exemple, 34 pièces). « Renommer » ne touche que le titre (2828-2833). Conséquences : (a) un client qui ajoute deux fois le même PDF (après « Ranger » ou par erreur) obtient « …-2 » et toutes ses corrections/réglages de la première pièce sont orphelins ; (b) unique_id (390-405) ne regarde ni store/score_edits ni store/reglages ni corrections/ : un id libéré (pièce retirée de library.json par un agent, HANDOFF.md:202 l'a fait pour 13 pièces) est réattribué à une pièce qui hérite des edits « stale » et des réglages d'une autre partition ; (c) le même .pupitre importé garde son id (1527) mais une pièce re-lue depuis le même PDF sur un autre ordinateur en a un autre : les corrections ne se retrouvent pas. La copie « une portée par voix » tronque encore : « mi-parea-ave-maria-otello-une-portee-par ». DONNEES.md:143-147 et REVUE.md:162 reconnaissent que la clé devrait être le sha256 : ce n'est pas fait, et chaque nouvelle fonction (structure, raccourcir) ajoute des fichiers nommés par ce slug.",
+   "what_instead": "Décider avant la bêta : id = 'p_' + 12 hex du sha256 de l'original (déjà calculé dans library.json), le slug du titre restant un nom d'affichage ; unique_id doit aussi considérer store/score_edits, store/reglages (par le préfixe piece_<slug>_) et corrections/ comme pris. Pour les enregistrements : clé = sha256 du son (DONNEES.md §5 point 1), l'adresse sync/ dérivée. Fournir une migration unique (migrate_ids.py) qui renomme avec historique, et un test d'import/export qui prouve qu'une pièce exportée puis réimportée retrouve ses corrections.",
+   "experiment": "Ajouter le même PDF deux fois : regarder les deux ids dans library.json et chercher les corrections de la première dans la seconde.",
+   "area_key": "data",
+   "area": "Sécurité des données (corrections, partitions corrigées, versions, corbeille, « remplacer ou copier »)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "data/migrate-mac-only-et-bibliotheque-cassee-sans-reparation",
+   "title": "Première ouverture : migrate_library.py dépend de JavaScriptCore (Mac) ; et une library.json illisible n'a aucun chemin de réparation dans l'app alors que history/ a les copies",
+   "severity": "medium",
+   "category": "wrong",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/migrate_library.py",
+     "line": 40,
+     "quote": "JSC = '/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc'"
+    },
+    {
+     "file": "code/tools/migrate_library.py",
+     "line": 99,
+     "quote": "if os.path.exists(os.path.join(STORE, 'library', 'library.json')):\n        print('La bibliothèque existe déjà (Pupitre-data/store/library/library.json) : rien à faire.')"
+    },
+    {
+     "file": "code/app/library.js",
+     "line": 126,
+     "quote": "try { await call('migrate', {}); return loadLib({ migrate: false }); } catch (e) { api.toast('Rangement impossible : ' + e.message, 5000); }"
+    },
+    {
+     "file": "code/tools/api_library.py",
+     "line": 3328,
+     "quote": "if lib is None:\n            raise RuntimeError('la bibliothèque n’est pas encore créée')"
+    },
+    {
+     "file": "code/tools/serve.py",
+     "line": 219,
+     "quote": "except (OSError, ValueError):\n        return default"
+    }
+   ],
+   "detail": "[verified] Le dossier « copié sur une clé USB » (règle 7 du CLAUDE.md) ouvert sur Windows ne peut pas créer library.json : jsc n'existe pas, migrate échoue, et create_piece refuse tout (3328-3329). Le produit emballé contourne le problème avec un Pupitre-data-template contenant une bibliothèque vide (build_product.py:216-221), mais ce n'est pas le chemin testé par les agents ni celui de la bêta « dossier ». Deuxième cas, plus grave pour un client : library.json illisible (JSON cassé) → store_read renvoie None (serve.py:215-220) → library.js appelle migrate → migrate dit « existe déjà, rien à faire » → l'app reste sans bibliothèque, sans message utile, alors que store/library/history/library.<stamp>.json contient des dizaines de copies bonnes. Aucun écran ne propose « reprendre la dernière bibliothèque lisible ».",
+   "what_instead": "(1) migrate_library.py : lire pieces.js avec Node si présent, sinon avec une regex/JSON embarqué, sinon créer une bibliothèque vide (le produit le fait déjà) ; (2) dans load_library, si le fichier existe mais ne se lit pas : le mettre de côté (history/library.<stamp>.illisible.json), prendre la dernière copie lisible de history/ et le dire dans l'app (« La bibliothèque a été reprise de 16:40 »). Même règle pour recordings.json et pour chaque store/<area>/<nom>.json dans store_read.",
+   "experiment": "Tronquer Pupitre-data/store/library/library.json à moitié, recharger : Mon classeur est vide et rien ne propose l'historique.",
+   "area_key": "data",
+   "area": "Sécurité des données (corrections, partitions corrigées, versions, corbeille, « remplacer ou copier »)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "data/deux-serveurs-memes-donnees-pratique-des-agents",
+   "title": "La pratique de test « un serveur sur un port de secours » peut faire tourner deux processus sur le même Pupitre-data : les verrous sont par processus",
+   "severity": "medium",
+   "category": "risk",
+   "tag": "inferred",
+   "evidence": [
+    {
+     "file": "code/claude/skills/pupitre-tester/SKILL.md",
+     "line": 22,
+     "quote": "For a sandbox, start a copy of\n  the server on a spare port (8791–8798 were used before), then stop it by PID."
+    },
+    {
+     "file": "code/CLAUDE.md",
+     "line": 26,
+     "quote": "When you test in a browser, **block writes to the server**, or use a copy of the app on a spare port."
+    },
+    {
+     "file": "code/tools/serve.py",
+     "line": 125,
+     "quote": "store_lock = threading.Lock()"
+    },
+    {
+     "file": "code/tools/api_library.py",
+     "line": 160,
+     "quote": "_lock_home = sys.modules.setdefault('pupitre_lib_lock', type(sys)('pupitre_lib_lock'))"
+    },
+    {
+     "file": "code/claude/HANDOFF.md",
+     "line": 228,
+     "quote": "serveur du projet lancé avec PUPITRE_DATA=… sur 8794 (arrêté après)"
+    }
+   ],
+   "detail": "[verified] store_lock et le lock de api_library sont des threading.Lock : ils ne protègent qu'un processus. Le contrôle X-Base-Rev est un lire-comparer-écrire sous ce verrou (serve.py:162-192), donc entre deux processus il n'est pas atomique. [inferred] Le skill testeur dit « start a copy of the server on a spare port » sans dire de copier Pupitre-data ni de poser PUPITRE_DATA ; une seule entrée du journal (HANDOFF:228) montre PUPITRE_DATA utilisé. Avec plusieurs agents en parallèle sur le Mac (brief §1), un serveur de test sur le vrai Pupitre-data et le serveur 8766 de Léo écrivent library.json, recordings.json et corrections/ en même temps : history/ garde le perdant, mais le fichier courant peut être celui du test. Les « écritures bloquées » (stub fetch) ne couvrent que le navigateur piloté, pas les jobs ni les routes serveur que les tests appellent directement. [guess] C'est une cause plausible des petites incohérences qu'on observe dans le zip (voir zip-verdi-raccourci-incoherent).",
+   "what_instead": "Dans serve.py : refuser de démarrer si Pupitre-data/logs/serveur.pid pointe sur un autre serveur vivant pour le même P.DATA (fichier de verrou avec fcntl/msvcrt), sauf avec --je-sais-ce-que-je-fais ; dans le skill testeur : « un serveur de test se lance TOUJOURS avec PUPITRE_DATA=<copie> ». Les tests Python qui touchent api_library doivent poser PUPITRE_DATA (raccourcir_test.py le fait : ligne 22, c'est le bon modèle).",
+   "experiment": "Lancer deux serve.py (8766 et 8791) sur le même dossier, renommer une pièce dans l'un pendant que l'autre accepte un job : comparer library.json et history/.",
+   "area_key": "data",
+   "area": "Sécurité des données (corrections, partitions corrigées, versions, corbeille, « remplacer ou copier »)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "data/zip-verdi-raccourci-incoherent",
+   "title": "Le zip contredit le récit : library.json montre le Verdi « une portée par voix » sur sa partition entière, sans beforeRaccourcir, alors que l'exemple de notes a 248 mesures et 01-HISTOIRE dit « appliqué »",
+   "severity": "low",
+   "category": "wrong",
+   "tag": "inferred",
+   "evidence": [
+    {
+     "file": "donnees-exemple/formats/library.json",
+     "line": 1,
+     "quote": "'mi-parea-ave-maria-otello-une-portee-par' | library | Mi parea… Piangea cantando (Otello) | app.score: lib/mi-parea-ave-maria-otello-une-portee-par/score.musicxml | app.data: data/mi-parea-ave-maria-otello-une-portee-par.json | ['structureOf'] ['scanned']"
+    },
+    {
+     "file": "donnees-exemple/formats/piece-notes_verdi-raccourcie.json",
+     "line": 1,
+     "quote": "{\"id\":\"mi-parea-ave-maria-otello-une-portee-par\",\"total_ql\":887.5,\"measures\":[… 248 mesures …]"
+    },
+    {
+     "file": "01-HISTOIRE-ET-ETAT.md",
+     "line": 61,
+     "quote": "Applied to the Verdi through the real route: 248 bars of 309 kept."
+    },
+    {
+     "file": "code/claude/HANDOFF.md",
+     "line": 562,
+     "quote": "renommée par la route rename « Mi parea… Piangea cantando (Otello) » (historique de library.json gardé). Pour revenir : Mon classeur › la pièce › « Revenir à la partition entière »"
+    }
+   ],
+   "detail": "[verified] Dans library.json (savedAt 2026-10-08 14:39 UTC), la pièce porte bien le nouveau titre donné APRÈS la coupe, mais app.score et app.data pointent sur les fichiers entiers, la piste tempo63 sur audio/lib/<id>/tempo-63.m4a (pas -court), et il n'y a ni app.raccourcie ni app.beforeRaccourcir. Le fichier d'exemple « piece-notes_verdi-raccourcie.json » a 248 mesures sous le même id : c'est data/<id>.court.json ou une copie dans removed/. [inferred] Soit « Revenir à la partition entière » a été cliqué avant le zip (l'undo garde le titre : raccourcir_test.py:211), soit l'application a échoué après l'écriture des fichiers (le synth lève → fichiers déplacés dans removed/raccourcir-<stamp>/, 540-547) et le journal dit quand même « fait ». Dans les deux cas, 01-HISTOIRE présente comme état courant quelque chose que les données livrées ne montrent pas, et personne n'a vérifié la pièce dans un navigateur après la coupe (HANDOFF:562 « la pièce raccourcie n'a pas été dessinée par Verovio »).",
+   "what_instead": "Vérifier sur le Mac : Pupitre-data/logs/structure.log (lignes « raccourcir apply/undo »), l'existence de data/mi-parea…court.json et de removed/raccourcir-*/, et store/library/history/ autour de 14:39 UTC. Corriger 01-HISTOIRE pour décrire l'état réel. Faire écrire par _apply_replace une ligne de log APRÈS change_library (aujourd'hui le log « apply » précède l'écriture : raccourcir_piece.py:505).",
+   "experiment": "grep 'raccourcir' Pupitre-data/logs/structure.log ; ls Pupitre-data/pieces/data/mi-parea* Pupitre-data/removed/raccourcir-*",
+   "area_key": "data",
+   "area": "Sécurité des données (corrections, partitions corrigées, versions, corbeille, « remplacer ou copier »)",
+   "severity_original": "low",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "data/structure-apply-replace-sans-nettoyage",
+   "title": "structure_piece._apply_replace n'a pas le nettoyage que raccourcir_piece a : fichiers orphelins et erreur brute si la piste d'exercice échoue",
+   "severity": "low",
+   "category": "weak",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/structure_piece.py",
+     "line": 755,
+     "quote": "res = L.run_cli('synth', json.dumps(spec), timeout=1800)\n        practice[r['id']] = {'rec': {**r, **{k: res['rec'][k] for k in ('file', 'sync')}}, 'sha256': res.get('sha256')}"
+    },
+    {
+     "file": "code/tools/raccourcir_piece.py",
+     "line": 540,
+     "quote": "except Exception:\n        # (nothing of the piece was changed yet: the two new files are set aside, never deleted)\n        gone = P.DATA / 'removed' / f'raccourcir-{time.strftime(\"%Y%m%d-%H%M%S\")}'"
+    },
+    {
+     "file": "code/tools/structure_piece.py",
+     "line": 744,
+     "quote": "data_abs.write_text(json.dumps(data, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')"
+    }
+   ],
+   "detail": "[verified] Les deux fonctions ont été écrites le même jour par le même procédé ; la seconde (raccourcir) a appris de la première mais la première n'a pas été mise à jour. Si synth échoue (run_cli lève RuntimeError, ou KeyError sur res['rec']), score.structure.musicxml et <id>.structure.json restent dans lib/ et data/ ; _free() nommera le prochain essai -2, -3… et taken_ids() comptera ces fichiers comme des ids pris. Pas de perte, mais un désordre qui s'accumule et que personne ne voit. Même remarque pour le journal : log('apply …') est écrit AVANT change_library (693), donc un journal peut dire « fait » pour une opération qui a échoué.",
+   "what_instead": "Copier le try/except de raccourcir_piece.py:530-547 dans structure_piece._apply_replace (déplacer les deux fichiers vers removed/structure-<stamp>/ et relever), et loguer après change_library avec le résultat.",
+   "experiment": "",
+   "area_key": "data",
+   "area": "Sécurité des données (corrections, partitions corrigées, versions, corbeille, « remplacer ou copier »)",
+   "severity_original": "low",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "data/save-corrections-nom-non-filtre",
+   "title": "PUT /corrections/<nom> n'applique pas NAME_RE et saute le contrôle de conflit quand le fichier n'a pas de savedAt",
+   "severity": "low",
+   "category": "weak",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/tools/serve.py",
+     "line": 702,
+     "quote": "name = os.path.basename(self.path)\n        if not name.endswith('.json') or '..' in name:"
+    },
+    {
+     "file": "code/tools/serve.py",
+     "line": 124,
+     "quote": "NAME_RE = re.compile(r'[A-Za-z0-9_][A-Za-z0-9_.-]{0,79}\\.json')"
+    },
+    {
+     "file": "code/tools/serve.py",
+     "line": 733,
+     "quote": "if base is not None and isinstance(cur, dict) and cur.get('savedAt') and isinstance(doc, dict):"
+    }
+   ],
+   "detail": "[verified] Le store refuse les noms hors de NAME_RE (130) ; les corrections acceptent tout basename finissant par .json (espaces, caractères Unicode, 200 caractères) : sur Windows un nom avec « : » ou « ? » échouera à l'écriture avec une OSError non attrapée → 500, et le même nom passé en URL-encodé donnera un fichier différent de celui que l'app relit. Le contrôle X-Base-Saved est ignoré si le fichier courant n'a pas de savedAt (anciens fichiers, ou un fichier recopié à la main) : deux fenêtres peuvent alors s'écraser sans 409. Faible aujourd'hui parce que les noms viennent des slugs, mais c'est le genre de ligne qui mord au premier client Windows.",
+   "what_instead": "Réutiliser store_path-style : NAME_RE.fullmatch(name) sinon 400 ; dans _save_corrections_locked, traiter un fichier sans savedAt comme rev 0 et comparer sur rev plutôt que sur savedAt.",
+   "experiment": "",
+   "area_key": "data",
+   "area": "Sécurité des données (corrections, partitions corrigées, versions, corbeille, « remplacer ou copier »)",
+   "severity_original": "low",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  },
+  {
+   "id": "data/documents-trop-gentils-donnees-md-et-histoire",
+   "title": "DONNEES.md et 01-HISTOIRE décrivent une sécurité que le code n'a pas (union des edits, rien d'effacé, deux portes, « aucune perte signalée »)",
+   "severity": "medium",
+   "category": "oversold",
+   "tag": "verified",
+   "evidence": [
+    {
+     "file": "code/docs/DONNEES.md",
+     "line": 12,
+     "quote": "Rien n'est jamais effacé : chaque version précédente d'un document est gardée dans `history/`."
+    },
+    {
+     "file": "code/docs/DONNEES.md",
+     "line": 23,
+     "quote": "union des `edits` par id"
+    },
+    {
+     "file": "01-HISTOIRE-ET-ETAT.md",
+     "line": 33,
+     "quote": "corrections saved to browser and to disk with history; named versions with a git commit each; \"nothing is deleted\". I found no report of lost work in the log."
+    },
+    {
+     "file": "code/app/app.js",
+     "line": 4956,
+     "quote": "Fix (26 Sep): the versions count too. A fresh browser with the same edit (e.g. none) but none of the\n    // file's versions used to send versions: [] at load, dropping them from the file."
+    },
+    {
+     "file": "rapports/A-VALIDER-2026-09-26.md",
+     "line": 67,
+     "quote": "une sauvegarde à l'ouverture de la page aurait pu effacer une version gardée de Nelson 3. Rien n'a été perdu."
+    }
+   ],
+   "detail": "[verified] DONNEES.md est écrit comme une spécification réalisée : « rien n'est jamais effacé » (contredit par serve.py:743), « union des edits par id » (aucune union dans le code), « les deux seules portes » (les corrections en sont une troisième), « copie dans le dossier de sauvegarde » (vide). 01-HISTOIRE dit n'avoir trouvé « aucun rapport de travail perdu » : c'est vrai au sens strict, mais le code lui-même documente un bug du 26 septembre où le chargement d'une page vidait les versions ★ du fichier (app.js:4956-4958, A-VALIDER:67), et il n'existe aucun test de crash, de disque plein ni de deux fenêtres sur score_edits — 01-HISTOIRE:33 le reconnaît d'ailleurs. Pour un lecteur pressé (ou un agent qui lit DONNEES.md avant de coder), ces phrases font croire que la fusion et la sauvegarde existent et qu'il n'y a plus rien à faire là.",
+   "what_instead": "Réécrire DONNEES.md en deux colonnes « fait / promis », ligne par ligne, avec le fichier et la ligne qui le prouvent ; retirer « jamais » partout où un os.remove existe ; ajouter une section « ce qui peut encore se perdre » (prises, hors-ligne + autre fenêtre, Retirer, restore). Même traitement pour CLAUDE.md règle 2 (« Tools never write there ») : lister les exceptions réelles (import_piece écrit score_edits 1544-1545, versions.py restore --corrections, followOther réécrit les corrections d'autres enregistrements sans X-Base-Saved app.js:8014).",
+   "experiment": "",
+   "area_key": "data",
+   "area": "Sécurité des données (corrections, partitions corrigées, versions, corbeille, « remplacer ou copier »)",
+   "severity_original": "medium",
+   "status": "unverified",
+   "verdicts": [],
+   "already_known": false,
+   "already_known_where": ""
+  }
+ ],
+ "refuted": [],
+ "answers": []
+}

@@ -1,0 +1,468 @@
+{
+ "name": "wf_6c8ec660-50e",
+ "areas": [],
+ "findings": [],
+ "refuted": [],
+ "answers": [
+  {
+   "n": 8,
+   "direct_answer": "Oui, beaucoup trop large : pour le 26 octobre, la bêta doit être le « Lecteur » (ouvrir un .pupitre préparé, choisir sa voix, écouter, boucler, ralentir, Ma ligne, Par cœur) plus un Calage à la main minimal ; tout le reste — lecture de partition (photos/PDF), Relire par une IA, Partir de l'enregistrement, Vidéo/Images du morceau, pochettes peintes et petite IA, Pianiste/IA, test de voix, Trouver ma note, Exporter pour le chœur — sort du build, et l'atelier de calage (Options, Plus de réglages, Jouer/Copier/Reprendre/Recaler, Mes prises, Mes marques, Studio) passe derrière un interrupteur « Atelier » éteint par défaut.",
+   "reasoning": "**1. La surface, mesurée.** `code/app/index.html` contient 150 `<button` et 101 infobulles `title=` [verified, grep]. `code/app/app.js:8143` déclare 24 modules paresseux (`MODULE_NAMES`), et `app.js:8197-8204` en charge 7 à 8 de plus à chaque ouverture de pièce qu'on s'en serve ou non (reperes, marques, prises, calplus, video, reprendre, paroles, grandpiano). Le dossier `code/app/` fait 43 274 lignes de JS hors maquettes ; j'estime qu'environ un quart (app.js, ecran, welcome, classeur, lecteur, dropimport, userdata, voices) sert au chanteur, le reste est atelier, lecture OMR ou décoration [inferred, wc]. Le serveur : 12 `api_*.py`, dont `api_library.py` (4 432 lignes, 45 branches de routes) [verified]. À côté, 28 dossiers de maquettes, 76 fichiers, 21 218 lignes [verified] : la moitié du volume du produit est du prototype, et `HANDOFF.md` cite 104 fois « maquette » et 84 tours Loupe (jusqu'à PUP-R118) [verified].\n\nSur l'écran d'exercice (image 17) : barre du bas de 12 boutons (`index.html:538-588` : Écouter/Chanter, Boucle, Mes passages, début de mesure, −5 s, lecture, répéter, sauter, **enregistrer mes prises** l.572, vitesse, **crayon des marques** l.586, Piano, Calage) ; panneau de droite avec un onglet **Vidéo** (l.213), une rangée « Joué : Partition · Pianiste · IA » (`app.js:2625-2633`), « En plus » (Salle 4 choix, Accordage, Métronome, Transposer), et un pli Affichage de 12 lignes (`index.html:263-276`) dont « Vignettes » à 4 styles avec « Peinte » ajouté le 8 oct. Le Calage : 9 outils dans Options (l.369-378), 11 réglages sous « Plus de réglages » (l.387-404), une table d'aide de 25 gestes (l.432-456), 21 raccourcis (`app.js:3296-3326`) plus 11 propres à Chanter. Le dossier d'une pièce : 19 commandes au repos, 25 pièce ouverte, comptées par l'agent lui-même (`HANDOFF.md:565`, image 28) ; Léo : « trop de boutons et de machins » (`01-HISTOIRE-ET-ETAT.md:134`).\n\n**2. La règle du projet est déjà violée.** `code/CLAUDE.md:48-50` : « one thing in, one thing out… The numbers must not go up. » Le 26 sept l'écran principal était à 16 commandes (`rapports/simplicite-2026-09-26.md:14`). Le 7 oct : « principal 21 -> 19 commandes… panneau 37 -> 34 » (`HANDOFF.md:449`), le 8 oct « commandes 5 / 19 / 34, mots UI 12 / 22 / 69 » (`HANDOFF.md:556`). +3 sur l'écran principal, 34 dans le panneau : la mesure existe, elle est ignorée [verified].\n\n**3. Le mécanisme qui devait cacher l'atelier est mort.** Le mode « Chanteur / Atelier » a été retiré à la v057, « always everything » (`CONTEXTE-COMPLET.md:156`). `app.js:7233` force `'atelier'` avec le commentaire « the Chanteur mode is gone: everything is always there » ; `setAppMode` (`app.js:8146-8154`) subsiste sans aucun `data-appmode` dans index.html et sans règle `chanteur` dans style.css [verified]. Le lieu « Préparer » (5 onglets) est canonique dans `code/docs/LEXIQUE.md:18-28` mais « n'est pas construit » (`simplicite-2026-09-26.md:90`, `CONTEXTE-COMPLET.md:367`) : douze jours plus tard, tous les outils vivent encore dans Mon classeur et dans le Calage. Seul le Lecteur sans serveur cache quelque chose (`style.css:2133`), et le build vendu A embarque un serveur, donc ne cache rien.\n\n**4. Le build vendu contredit l'écran.** `rapports/inventaire-2026-10-08/INVENTAIRE.md:122-128` : dans le produit A, « ajouter un enregistrement », « Ajouter une pièce par photos/PDF », Sans partition, pistes d'exercice, export MP3/vidéo, relecture IA « ne marchent pas » et les outils « plantent au premier `import numpy` ». Pourtant « Ajouter une pièce » (`index.html:92`), « + Enregistrement » (l.105), « Exporter ma partie » (l.104), « Relire par une IA » (`classeur.js:164`) sont affichés. Un client de la bêta cliquera sur des boutons qui mènent à un plantage Python [inferred, je n'ai pas pu lancer le build].\n\n**5. Ce que la surface promet n'est pas validé.** Chanter : « Never tried with a real voice » (`CONTEXTE-COMPLET.md:334`), `A-FAIRE-LEO.md:25` toujours non coché, et c'est pourtant l'étape 6 de la visite de bienvenue (`welcome.js:24-26`) ; Trouver ma note « Not tried with a real mic » (l.337) ; Relire par une IA jamais exécuté avec une vraie réponse (`01-HISTOIRE:62`) ; Images du morceau « 1000 fois trop buggé » (`images.js:8`) ; pochettes : « ESSAI… Quand il a choisi, les autres s'enlèvent » (`classeur-pochettes.js:2-5`) ; Pianiste « un peu pourri » (`01-HISTOIRE:143`) ; « Sans partition » dépend de MMS CC BY-NC retiré, « fonction coupée » (`INVENTAIRE.md:156`) mais le bouton reste (`library.js:1000-1061`). Léo n'utilise jamais « Je chante seul » ni « Mes départs » (`CONTEXTE:130`) ni Recalculer (l.129). Trois à cinq écrans pour « vérifier » la même partition : Vérifier (relecture.js), Relire la lecture (relire-lecture + editeur-mesure), Relire par une IA, Contrôles, la passe Contrôle de /lire/ — l'audit du 6 oct le dit déjà (`rapports/audit-2026-10-06/AUDIT.md:110`). Doublons d'entrée : `#iaBtn` caché (`index.html:110`) et `classeur.js:164` ; Caler avec des mots en tuile (l.109) et dans Options (l.369) ; Historique l.377 et l.416 ; Aide l.378 et l.428 ; sections mortes `#departsSec` (l.249), `#pronSec` (l.279), « Calage™ » (l.353) et « v1.0 » (l.498) interdits par le lexique (`LEXIQUE.md:9`).\n\n**6. Le plus grave : les conseils du projet ont été lus puis inversés.** Le 29 sept, six lecteurs frais concluent « DEUX produits : le Lecteur (95 %) et l'Atelier » et « l'analyse (calage automatique, lecture de PDF…) reste sur ton Mac » (`rapports/regard-neuf/2026-09-29-lancement/RETOUR.md:10-14, 78, 97-98`). `VISION.md:214` interdit « Built-in OMR as a trusted source ». Neuf jours plus tard : 8 000 lignes de JS et 19 332 lignes de Python (`tools/lecture/`) de lecture OMR, structure, raccourcir, vidéo, images, peintre, petite IA. Le travail perdu pour la bêta, c'est cela.\n\n**À retirer du build (ne pas livrer, le code reste au dépôt)** [recommandation] : lecture photos/PDF (`/lire/`, lecture-main*, lecture-pass-*, relire-*, editeur-mesure, portees, raccourcir, `tools/lecture/`, omr.py) ; Relire par une IA ; Partir de l'enregistrement ; pochettes peintes, peintre-moteur, classeur-pochettes, api_peindre, labo/mini-ia ; Vidéo + Images du morceau (video.js, images.js, api_video/images, video_tools.py avec chemins Mac) ; sources Pianiste et IA de l'accompagnement + « Modifier l'accompagnement » ; Exporter pour le chœur ; Ma ligne chantée ; Quelle est ma voix ? ; Trouver ma note ; Studio/grandpiano et lab/piano.html. Cela casse la promesse « un inconnu dépose un PDF » : je le dis clairement — cette promesse n'est pas tenable le 26 octobre, la bêta vend des pièces préparées (`INVENTAIRE.md:128`).\n\n**À cacher derrière « Atelier » (éteint par défaut)** : tout le Calage au-delà de glisser une barre ou une note (Options, Plus de réglages, Accroche, Fond spectre, Taper, Jouer, Copier, Reprendre, Recaler, Caler avec des mots) ; les tuiles Corriger/Vérifier/Contrôles/Exporter de Mon classeur ; Mes prises, Mes marques, Sauter ; En plus sauf Transposer ; Affichage réduit à Par cœur, Noms des notes, Changements de page ; les raccourcis hors Espace, ←/→, B, H, Esc, ? ; Chanter réduit à « Une prise · Doux » et sorti de la visite tant que trois choristes ne l'ont pas essayé [guess sur l'effet, verified sur l'état].",
+   "evidence": [
+    {
+     "file": "code/app/app.js",
+     "line": 8143,
+     "quote": "const MODULE_NAMES = { peintre: 'Pochette peinte', prises: 'Mes prises', marques: 'Mes marques', editor: 'Corriger la partition', print: 'Imprimer / exporter', pianiste: 'Accompagnateur', library: 'Bibliothèque', relecture: 'Relecture', welcome: 'Accueil', voicetest: 'Quelle est ma voix ?', classeur: 'Mon classeur', iareview: 'Relecture par une IA', reperes: 'Caler avec des mots', sungline: …"
+    },
+    {
+     "file": "code/app/app.js",
+     "line": 7233,
+     "quote": "store.set('mode', 'atelier'); setAppMode('atelier', true); // (the Chanteur mode is gone: everything is always there)"
+    },
+    {
+     "file": "code/app/app.js",
+     "line": 8197,
+     "quote": "idle(() => loadModule('reperes')…); idle(() => loadModule('marques')…); idle(() => loadModule('prises')…); idle(() => loadModule('calplus')…); idle(() => loadModule('video')…); idle(() => loadModule('reprendre')…); idle(() => loadModule('paroles')…);"
+    },
+    {
+     "file": "code/CLAUDE.md",
+     "line": 48,
+     "quote": "The rule is \"one thing in, one thing out\". After changing that screen, run `tools/simplicity_report.py`. The numbers must not go up."
+    },
+    {
+     "file": "rapports/simplicite-2026-09-26.md",
+     "line": 14,
+     "quote": "| Commandes visibles | 24 | **16** |"
+    },
+    {
+     "file": "code/claude/HANDOFF.md",
+     "line": 449,
+     "quote": "simplicity_report v616 -> maintenant : principal 21 -> 19 commandes, 36 -> 22 mots ; panneau 37 -> 34, 77 -> 60."
+    },
+    {
+     "file": "code/claude/HANDOFF.md",
+     "line": 556,
+     "quote": "simplicity_report avant = après : commandes 5 / 19 / 34, mots UI 12 / 22 / 69, Affichage est replié"
+    },
+    {
+     "file": "code/claude/HANDOFF.md",
+     "line": 565,
+     "quote": "commandes en vue à l'arrivée 7 / 7 / 6 (Loch, pièce pas ouverte) contre 19 aujourd'hui ; pièce ouverte 6 / 6 / 5 contre 25"
+    },
+    {
+     "file": "code/claude/CONTEXTE-COMPLET.md",
+     "line": 156,
+     "quote": "The « Chanteur / Atelier » modes (removed at v057, « always everything »)."
+    },
+    {
+     "file": "code/claude/CONTEXTE-COMPLET.md",
+     "line": 367,
+     "quote": "### Préparer-type tools (today reached from Mon classeur; the planned « Préparer » place doesn't exist yet)"
+    },
+    {
+     "file": "code/docs/LEXIQUE.md",
+     "line": 20,
+     "quote": "## Dans « Préparer » (5 onglets)"
+    },
+    {
+     "file": "code/app/style.css",
+     "line": 2133,
+     "quote": "html[data-lecteur] :is(#clsAddPiece, #libraryBtn, #clsSaveAll, #shareBtn, #addRec, #relectureBtn, #diagBtn, #reperesBtn, #iaBtn, #moreMenu [data-more=\"share\"]) { display: none !important; }"
+    },
+    {
+     "file": "rapports/inventaire-2026-10-08/INVENTAIRE.md",
+     "line": 125,
+     "quote": "ne marche pas : **ajouter un enregistrement (calage automatique)**, **Ajouter une pièce par photos/PDF**, Sans partition, pistes d'exercice (practice_piano, choir_timed), export MP3/vidéo, relecture IA, et tout ce qui a besoin de ffmpeg."
+    },
+    {
+     "file": "rapports/inventaire-2026-10-08/INVENTAIRE.md",
+     "line": 128,
+     "quote": "Donc aujourd'hui, le produit vendable est un **lecteur de pièces préparées par Léo**."
+    },
+    {
+     "file": "code/app/index.html",
+     "line": 92,
+     "quote": "<button class=\"clsBtn\" id=\"clsAddPiece\" data-module=\"library\" data-module-action=\"add\">…Ajouter une pièce</button>"
+    },
+    {
+     "file": "code/app/index.html",
+     "line": 110,
+     "quote": "<button id=\"iaBtn\" class=\"clsTile quiet\" hidden style=\"grid-column: 1 / -1\" data-module=\"iareview\" … <span>Faire relire par une IA</span></button>"
+    },
+    {
+     "file": "code/app/classeur.js",
+     "line": 164,
+     "quote": "<button class=\"clsBtn\" data-a=\"ia\" title=\"Faire relire la partition par une IA (Claude ou une autre)…\">${ic(I.ia…"
+    },
+    {
+     "file": "code/app/index.html",
+     "line": 213,
+     "quote": "<button role=\"tab\" data-tab=\"video\">…Vidéo</button>"
+    },
+    {
+     "file": "code/app/index.html",
+     "line": 276,
+     "quote": "<span>Vignettes</span><span class=\"affSeg\" id=\"covSeg\"><button data-cov=\"pochette\">Pochette</button><button data-cov=\"albers\">Albers</button><button data-cov=\"rosace\">Rosace</button><button data-cov=\"peinte\">Peinte</button></span>"
+    },
+    {
+     "file": "code/app/index.html",
+     "line": 369,
+     "quote": "<button class=\"mi\" id=\"edRepBtn\" data-module=\"reperes\" data-module-action=\"words\" …>Caler avec des mots"
+    },
+    {
+     "file": "code/app/index.html",
+     "line": 387,
+     "quote": "<details class=\"optMore\" id=\"edOptMore\"><summary title=\"Notes détectées, accompagnement, attaques, zoom, grille, tête de lecture\">Plus de réglages</summary>"
+    },
+    {
+     "file": "code/app/index.html",
+     "line": 353,
+     "quote": "<span class=\"ed-title ed-logo\">Calage<span class=\"tm\">™</span></span>"
+    },
+    {
+     "file": "code/docs/LEXIQUE.md",
+     "line": 9,
+     "quote": "Pas de ™, ®, ni de numéro de version à l'écran du choriste."
+    },
+    {
+     "file": "code/app/index.html",
+     "line": 572,
+     "quote": "<button id=\"takeBtn\" class=\"tb repeatBtn takeBtn\" aria-pressed=\"false\" title=\"Enregistrer mes prises : la musique joue et ta voix est enregistrée…\""
+    },
+    {
+     "file": "code/app/app.js",
+     "line": 2625,
+     "quote": "// « IA » (greyed until the piece has one); with « Pianiste », its formula, for the piece or for the loop"
+    },
+    {
+     "file": "code/app/welcome.js",
+     "line": 24,
+     "quote": "{ at: () => document.querySelector('.modeSeg [data-mode=\"train\"]'), title: 'Chanter', text: 'Tu chantes, l’app écoute. Elle te montre ce qui est juste et ce qui reste à travailler.' },"
+    },
+    {
+     "file": "code/claude/CONTEXTE-COMPLET.md",
+     "line": 334,
+     "quote": "« Régler le délai (5 s) » is a loopback latency test. **Never tried with a real voice.**"
+    },
+    {
+     "file": "code/claude/CONTEXTE-COMPLET.md",
+     "line": 130,
+     "quote": "He never used « Je chante seul » or « Mes départs » (both folded or hidden)."
+    },
+    {
+     "file": "code/app/images.js",
+     "line": 8,
+     "quote": "(7 Oct, retours de Léo « trop petit, galère de déplacer », « 1000 fois trop buggé », « sélectionner plusieurs »…"
+    },
+    {
+     "file": "code/app/classeur-pochettes.js",
+     "line": 2,
+     "quote": "ESSAI : Léo choisit entre trois présentations (Petite pochette · Étagère · Pile ; « Sans pochette » = la liste d'avant, inchangée) et trois pochettes (Peinte · Rosace · Pochette)… Quand il a choisi, les autres s'enlèvent"
+    },
+    {
+     "file": "rapports/inventaire-2026-10-08/INVENTAIRE.md",
+     "line": 156,
+     "quote": "| **MMS / ctc-forced-aligner** | CC BY-NC | … | **« Sans partition »** (draft_auto) et les syllabes du mode complet |"
+    },
+    {
+     "file": "code/app/library.js",
+     "line": 1061,
+     "quote": "import('./sanspartition.js').then((m) => m.draw({"
+    },
+    {
+     "file": "rapports/audit-2026-10-06/AUDIT.md",
+     "line": 110,
+     "quote": "### 8. Trois chemins et trois écrans de relecture pour la même chose — DETTE — M — intégration app"
+    },
+    {
+     "file": "rapports/regard-neuf/2026-09-29-lancement/RETOUR.md",
+     "line": 10,
+     "quote": "**Les amateurs ne prépareront jamais une pièce**… Donc Pupitre, ce sont DEUX produits : le Lecteur (95 % des gens)… l'Atelier (une personne par chœur…)"
+    },
+    {
+     "file": "rapports/regard-neuf/2026-09-29-lancement/RETOUR.md",
+     "line": 97,
+     "quote": "- L'analyse (calage automatique, lecture de PDF, pistes MuseScore) chez les amis et les chanteurs : elle reste sur ton Mac"
+    },
+    {
+     "file": "code/docs/VISION.md",
+     "line": 214,
+     "quote": "- **Built-in OMR** as a trusted source, or any automatic correction of the score."
+    },
+    {
+     "file": "code/tools/build_product.py",
+     "line": 56,
+     "quote": "APP_SKIP = {'lab', 'maquettes', 'migrate.html', 'eolides-logo.png', 'pieces.js', 'rubberband-web'}"
+    },
+    {
+     "file": "code/tools/build_product.py",
+     "line": 72,
+     "quote": "TOOLS_SKIP = {'madmom_beats', 'align_lyrics'}"
+    },
+    {
+     "file": "rapports/simplicite-2026-09-26.md",
+     "line": 96,
+     "quote": "- Le test avec 2 ou 3 choristes (20 min chacun, toi muet)."
+    },
+    {
+     "file": "01-HISTOIRE-ET-ETAT.md",
+     "line": 143,
+     "quote": "On 7 Oct Léo: \"l'accompagnement est un peu pourri\"."
+    },
+    {
+     "file": "code/claude/REPRISE-2026-10-08.md",
+     "line": 19,
+     "quote": "## Attend une décision de Léo"
+    }
+   ],
+   "what_to_do": [
+    "1. Décider par écrit que la bêta du 26 octobre est le « Lecteur » (pièces préparées par Léo, livrées en .pupitre) : un nouveau fichier court `code/docs/BETA-26-OCT.md` qui liste les ≤ 12 commandes de l'écran d'exercice et les ≤ 8 du panneau, et qui gèle toute nouveauté et toute nouvelle maquette jusqu'au 26 (les 6 décisions en attente de `code/claude/REPRISE-2026-10-08.md:19-25` sont reportées après la bêta).",
+    "2. Rétablir l'interrupteur Chanteur/Atelier : garder `setAppMode` (`code/app/app.js:8146`), supprimer le forçage `'atelier'` de `app.js:7233`, mettre `chanteur` par défaut pour un profil neuf (`welcome.js` askVoice), ajouter un seul bouton « Atelier » dans Réglages › En plus, et écrire dans `code/app/style.css` une règle `html[data-mode=\"chanteur\"] :is(…) { display:none }` calquée sur la règle Lecteur de `style.css:2133`, qui cache : les tuiles `#clsTools` (`index.html:101-113`), `#edViewBtn`/`#edOptMore`/`#edAccroche` du Calage (`index.html:365, 387, 363`), `#takeBtn`, `#mqBtn`, `#skipBtn` (`index.html:572, 586, 570`), la rangée « Joué » du mixer (`app.js:2633`), la section En plus sauf Transposer (`app.js:2645`), et les lignes d'Affichage autres que Par cœur / Noms des notes / Changements de page (`index.html:263-268, 272, 274, 276`).",
+    "3. Sortir du build vendu, dans `code/tools/build_product.py` : étendre `APP_SKIP` (l.56) avec `lire`, `lecture-main.js`, `lecture-main/`, `lecture-pass-*.js`, `relire-lecture.js`, `relire-core.js`, `relire-glyphs.js`, `editeur-mesure.js`, `portees.js`, `raccourcir.js`, `iareview.js`, `iareview-core.js`, `sanspartition.js`, `peintre.js`, `peintre-moteur.js`, `peintre.css`, `classeur-pochettes.*`, `img/pochettes`, `video.js`, `images.js`, `images-bord.js`, `choir.js`, `sungline.js`, `voicetest.js`, `findnote.js`, `grandpiano.js`, `jouer.js`, `copier.js`, `decalage.js`, `reprendre.js`, `recaler.js` ; étendre `TOOLS_SKIP` (l.72) avec `lecture`, `omr`, `ai_read`, `ai_package`, `ai_essai`, `ia_review`, `ia_accomp`, `ia_auto`, `api_lire`, `api_peindre`, `api_video`, `api_images`, `api_sanspartition`, `api_recaler`, `api_reprendre`, `structure_piece`, `raccourcir_piece`, `video_tools`, `draft_auto`, `sung_line`, `musescore_render`.",
+    "4. Rendre le chargeur de modules honnête : dans `app.js` `loadModule` (l.8164), filtrer `MODULE_NAMES` par un ensemble `SHIPPED` écrit par le build, et faire disparaître (pas seulement échouer) tout bouton `data-module` dont le module n'est pas livré ; retirer de `index.html` les blocs morts `#iaBtn` (l.110), `#departsSec` (l.249-255), `#pronSec` (l.279), l'iframe de migration (l.18-40), l'onglet et le volet Vidéo (l.213, 282-286), « Calage™ » (l.353), « v1.0 » (l.498), et les doublons Historique/Aide du menu Options (l.377-378).",
+    "5. Remplacer « Ajouter une pièce » par « Recevoir un .pupitre » dans la bêta : dans `library.js` (`open({action:'add'})`, l.583 et suivantes) ne garder que le chemin fichier MusicXML + enregistrement, supprimer les branches photos/PDF (l.636-1050) et « Partir de l'enregistrement » (l.1000-1061), et afficher la phrase déjà écrite en l.1022 (« Cherche la pièce en MusicXML (CPDL, IMSLP, MuseScore.com) ») comme seul message ; cacher « + Enregistrement » (`index.html:105`) tant que le calage automatique (1,8 Go de Python/IA, jamais lancé sous Windows) n'est pas dans le build.",
+    "6. Simplifier le dossier d'une pièce : construire l'arrangement 1 « Affiche » de la maquette `code/app/maquettes/classeur-piece/` (7 commandes au lieu de 19, `HANDOFF.md:565`) dans `code/app/classeur.js` (`draw`, l.160-170) ; à défaut, cacher la grille `#clsTools` en mode chanteur (action 2).",
+    "7. Chanter : réduire à « Une prise » au niveau « Doux » (`train.js:16` LEVELS, l.3119-3133 modes), cacher Libre/Exigeant/les 3 vues/le panneau Affichage (`train.js:304, 390-395`), retirer l'étape 6 de la visite (`welcome.js:24-26`) et ne le remettre en avant qu'après le test de 3 choristes demandé le 26 sept (`rapports/simplicite-2026-09-26.md:96`) et jamais fait.",
+    "8. Faire respecter `code/CLAUDE.md:48-50` : relancer `tools/simplicity_report.py` après les actions 2-7 avec un objectif chiffré (écran principal ≤ 12 commandes, panneau ≤ 8, mots ≤ 20) et refuser toute version où un chiffre remonte avant le 26 octobre.",
+    "9. Arrêter jusqu'à la bêta : nouvelles maquettes (28 dossiers, 21 218 lignes), pochettes peintes et petite IA, styles du Pianiste, vidéo/images, lecture OMR, « Raccourcir », « Une portée par voix » ; le budget restant va aux actions 1-8 et à l'essai sur un PC Windows et sur un Mac vierge."
+   ],
+   "confidence": "high",
+   "not_read": [
+    "Le corps de code/app/train.js (3 512 lignes), pianiste.js, reperes.js, editor.js, print.js, library.js (lus seulement par en-têtes et grep ciblés)",
+    "La quasi-totalité de code/tools/*.py et code/tools/lecture/*.py (seulement wc, ls, et grep des routes de api_library.py et de build_product.py)",
+    "code/claude/HANDOFF.md lignes 1-540 (grep ciblés seulement ; les 12 dernières entrées lues tronquées à 2 200 caractères)",
+    "Le code des 28 maquettes (seulement comptées)",
+    "code/claude/CONTEXTE-COMPLET.md hors sections 3, 6 et 14 ; code/docs/VISION.md hors §6-7 ; les rapports regard-neuf-2026-10-01/AVIS.md et revue-code-2026-10-01/REVUE.md (titres seulement)",
+    "Les images autres que 07, 11, 13, 17, 18, 23, 24, 28",
+    "Impossible de lancer l'app, le build (vendor, poids, audio absents) ni d'essayer sur Windows : les chiffres de commandes visibles viennent de index.html, des captures et des mesures citées dans HANDOFF, pas d'une exécution"
+   ]
+  },
+  {
+   "n": 7,
+   "direct_answer": "Non, pas en l'état : la base est refactorisable sur place (frontière `api` réelle, serveur produit en bibliothèque standard, modules purs testés sous node), mais elle n'est pas gouvernable jusqu'à une vente tant qu'app.js grossit sans borne, que la moitié des tests ne tourne que sur le Mac de Léo et que rien n'empêche deux sessions de casser le même fichier. Ni réécriture (aucune spécification hors du code et de l'œil de Léo pour la vérifier) ni « freeze and ship » (le build vendable n'a pas les fonctions cœur) : gel fonctionnel immédiat, puis cinq jours de consolidation structurelle sans changer un pixel, puis bêta. Minimum exigé : une commande de tests sans jsc, un lock de dépendances, un CI Mac+Windows, app.js interdit de croître, rechargement à chaud réservé à l'atelier, code mort et doublons supprimés, `api` v1 figée dans un fichier.",
+   "reasoning": "**Ce qui tient [verified].** La frontière `api` existe vraiment : `modApi` (code/app/app.js:8275), aucun des ~70 modules n'importe app.js, les imports module→module se limitent à des helpers purs (progress, tip, score-edits, reperes-core, lecture-pass-common), et 30 tests `.mjs` importent directement ces modules purs (aimant, barres, userdata, score-edits, decalage). Le serveur du produit est en bibliothèque standard seule (`tool_closure`, code/tools/build_product.py:154), les écritures sont atomiques avec historique (code/tools/serve.py:184-192, 739-748). C'est ce qui rend un refactor sur place possible et une réécriture inutile.\n\n**Ce qui ne tient pas [verified].** app.js : 8 521 lignes / 575 Ko servis non minifiés, 369 fonctions et 310 `const/let` au niveau racine, `wire()` 803 lignes (7091→7894), `drawRoll` 405 (5549), `rollPointer` 278 (6075), 118 champs `state.*`, 208 ids DOM lus par `$()`, 247 `addEventListener`, 62 `catch {}` vides, 249 commentaires datés « (N Oct) » : l'historique vit dans le code, pas dans git. Une seconde API non documentée, `trainApi` (app.js:4424, 20 clés), alimente train.js (3 512 lignes). La frontière est poreuse : pianiste.js écrit `api.state.accomp*` (1449, 1456, 1531) contre MODULES.md:42. Le « lazy » est nominal : sept modules sont chargés à l'idle à chaque démarrage (app.js:8197-8204) plus les slots pianiste/sungline, ≈ 6 950 lignes. Python : api_library.py 4 432 lignes, `handle()` = 417 lignes (2230→2647) de `if sub ==` pour 45 routes, qui passe `types.SimpleNamespace(**globals())` à structure_piece/raccourcir (2282, 2286) ; 195 `sys.path.insert` ; `read_json` défini 9 fois, `write_json` 6, `slug` 3 ; 560 `os.path.join` malgré CLAUDE.md:60 ; `/opt/homebrew/bin/ffmpeg` encore sondé dans un fichier livré (api_library.py:2241) dix jours après AUDIT-PORTABLE.md:17.\n\n**Rechargement à chaud [verified ; danger inferred].** `plugin()` (serve.py:229-245) ré-exécute le module quand son mtime change. Or api_lire.py:54 (`running = {}`), api_relecture.py:50 (`jobs = {}`), api_mix.py:32 (`_running = {}`) gardent les sous-processus en cours dans des globales de module : après un reload elles repartent vides, `busy()` (api_lire.py:651) répond faux et un second lancement devient possible pendant que le premier tourne. Dans le produit, aucun fichier n'est jamais édité : c'est un risque sans bénéfice. serve.py démarre à l'import, sans `main()` (753-755) ; shell_serve.py:49 le lance par `runpy`, donc une garde `__main__` est compatible.\n\n**Tests [verified].** Pas de commande unique ; la consigne est « Run the ones that touch what you changed » (pupitre-tester SKILL.md:26). Six `.mjs` utilisent `print(` et ne tournent que sous jsc, dont score_edits_test.mjs : le « 548/0 » n'est exécutable que sur Mac (run_score_edits_test.py:21). run_app_flow_test.py:23 et run_bugs_test.py:85-87 découpent app.js par des commentaires-marqueurs ; app_flow_pre.js:2 contient `/Users/leomarthaler/…` ; groupe_calage_headless.mjs:9-12 vise le serveur vivant 8766 et un Chrome `mac_arm`. Aucun lint, aucun CI, aucun lock pour `.venv` : les seuls requirements sont tools/lecture/requirements*.txt (nuance au fait établi : deux fichiers partiels existent pour la lecture, aucun pour le serveur ni le calage).\n\n**Code mort et doublons [verified].** rubberband (GPL) encore importé dynamiquement (app.js:526) ; `/api/tools` annonce madmom, BS-RoFormer, WhisperX, MFA retirés le 7 oct (serve.py:519-534) ; iframe de migration (index.html:18-36 + migrate.html) toujours là sept jours après REVUE B7 ; trois règles « le plus récent gagne » (app.js:4959, 7916, 8249) sept jours après REVUE §4.1 ; vieux panneau de reperes derrière `OLD_PANEL` (reperes.js:54, 452, 1317) ; peintre-moteur.js en trois copies (md5 identique avec maquettes/peintre/peintre-rapide.js) ; editeur-mesure.js partage 291 lignes identiques avec maquettes/lecture/editeur.js. Les maquettes vivent dans l'arbre servi app/.\n\n**Documentation et méthode [verified].** CONTEXTE-COMPLET.md:216-225 décrit encore BS-RoFormer, madmom et rubberband-web comme la chaîne ; MODULES.md est devenu un journal daté (l.85-99). HANDOFF.md : 410 Ko, 4 lignes > 5 000 caractères ; « v721-723 sont d'autres sessions, entrées par git add -A, non relues » (518) ; « pas de versions.py car d'autres sessions avaient app.js en cours » (195) ; « filtre perdu au découpage 1949d7e » (408) : les sessions parallèles sur app.js produisent des régressions, alors que STATUS.md:116 demandait dès le 24 sept « one agent at a time in app/ ». REVUE.md:5 (« L'app est saine ») est trop aimable : ses propres règles 9 et 10 (l.177-178 : scinder > 1 500 lignes, minifier, headless avant chaque version) n'ont pas été appliquées et app.js est passé de 6 800 à 8 521 lignes en sept jours.\n\n**Pourquoi ni réécriture ni gel pur [inferred].** Il n'existe aucune spécification hors du code et de l'œil de Léo ; une réécriture en 18 jours n'aurait rien contre quoi se vérifier. Geler tel quel livre un build sans calage ni lecture (INVENTAIRE.md:115-131) et 54 fichiers livrés sur 67 à revoir pour Windows (l.138), avec une structure incapable d'absorber sans casse les correctifs de bêta. Limite : je n'ai rien pu exécuter (ni vendor, ni git, ni Pupitre-data dans le zip).",
+   "evidence": [
+    {
+     "file": "code/app/app.js",
+     "line": 8275,
+     "quote": "const modApi = {"
+    },
+    {
+     "file": "code/app/app.js",
+     "line": 7091,
+     "quote": "function wire() {"
+    },
+    {
+     "file": "code/app/app.js",
+     "line": 4424,
+     "quote": "const trainApi = {"
+    },
+    {
+     "file": "code/app/app.js",
+     "line": 8197,
+     "quote": "idle(() => loadModule('reperes').catch((err) => console.warn(err))); // (Calage warnings, breath marks: always on)"
+    },
+    {
+     "file": "code/app/app.js",
+     "line": 526,
+     "quote": "const m = await import('./vendor/rubberband-web/createRubberBandNode.mjs');"
+    },
+    {
+     "file": "code/app/app.js",
+     "line": 4959,
+     "quote": "if ((!same || !sameV) && (d.savedAt || 0) > localAt) { // the file is newer: take it"
+    },
+    {
+     "file": "code/app/app.js",
+     "line": 8479,
+     "quote": "store.set('guideInst', 'knight'); store.set('boost', true);"
+    },
+    {
+     "file": "code/app/pianiste.js",
+     "line": 1456,
+     "quote": "api.state.accomp = {"
+    },
+    {
+     "file": "code/docs/MODULES.md",
+     "line": 42,
+     "quote": "`api.state` (read it; don't write the app's fields)"
+    },
+    {
+     "file": "code/app/reperes.js",
+     "line": 54,
+     "quote": "const OLD_PANEL = (() => { try { return api.store.get('reperes.oldPanel', false) === true; } catch { return false; } })();"
+    },
+    {
+     "file": "code/app/index.html",
+     "line": 32,
+     "quote": "var f = document.createElement('iframe'); f.src = 'http://localhost:8766/migrate.html'; f.style.display = 'none';"
+    },
+    {
+     "file": "code/tools/serve.py",
+     "line": 230,
+     "quote": "\"\"\"tools/api_<name>.py, imported on first use and again whenever the file changes.\"\"\""
+    },
+    {
+     "file": "code/tools/serve.py",
+     "line": 243,
+     "quote": "spec.loader.exec_module(mod)"
+    },
+    {
+     "file": "code/tools/serve.py",
+     "line": 522,
+     "quote": "('madmom', 'Détecteur de temps n°2 (RNN + DBN)', ok('.venv-mir', 'bin', 'python')),"
+    },
+    {
+     "file": "code/tools/serve.py",
+     "line": 755,
+     "quote": "http.server.ThreadingHTTPServer(('127.0.0.1', port), functools.partial(Handler, directory=ROOT)).serve_forever()"
+    },
+    {
+     "file": "code/tools/api_lire.py",
+     "line": 54,
+     "quote": "running = {}            # job -> Popen"
+    },
+    {
+     "file": "code/tools/api_relecture.py",
+     "line": 50,
+     "quote": "jobs = {}          # job id -> {status, report?, error?, started}"
+    },
+    {
+     "file": "code/tools/api_mix.py",
+     "line": 32,
+     "quote": "_running = {}  # id -> Popen"
+    },
+    {
+     "file": "code/tools/shell_serve.py",
+     "line": 49,
+     "quote": "runpy.run_path(str(HERE / 'serve.py'), run_name='__main__')"
+    },
+    {
+     "file": "code/tools/api_library.py",
+     "line": 2230,
+     "quote": "def handle(handler, method, sub, body):"
+    },
+    {
+     "file": "code/tools/api_library.py",
+     "line": 2282,
+     "quote": "return structure_piece_mod().handle(types.SimpleNamespace(**globals()), tools, method, sub, arg, js)"
+    },
+    {
+     "file": "code/tools/api_library.py",
+     "line": 2241,
+     "quote": "'tools': {'ffmpeg': bool(shutil.which('ffmpeg') or os.path.exists('/opt/homebrew/bin/ffmpeg')),"
+    },
+    {
+     "file": "code/tools/build_product.py",
+     "line": 154,
+     "quote": "def tool_closure(roots=('serve', 'paths', 'shell_serve', 'launch')):"
+    },
+    {
+     "file": "code/tools/tests/run_score_edits_test.py",
+     "line": 21,
+     "quote": "JSC = '/System/Library/Frameworks/JavaScriptCore.framework/Versions/Current/Helpers/jsc'"
+    },
+    {
+     "file": "code/tools/tests/run_app_flow_test.py",
+     "line": 23,
+     "quote": "section = cut('// ================= « Corriger la partition »', '// ================= add-on modules')"
+    },
+    {
+     "file": "code/tools/tests/app_flow_pre.js",
+     "line": 2,
+     "quote": "const ROOT = \"/Users/leomarthaler/Desktop/chorale/app/\";"
+    },
+    {
+     "file": "code/tools/tests/groupe_calage_headless.mjs",
+     "line": 9,
+     "quote": "const BASE = process.env.BASE || 'http://127.0.0.1:8766/';"
+    },
+    {
+     "file": "code/claude/skills/pupitre-tester/SKILL.md",
+     "line": 26,
+     "quote": "Run the ones that touch what you changed."
+    },
+    {
+     "file": "code/tools/lecture/requirements.txt",
+     "line": 1,
+     "quote": "# Score reading (tools/lecture), main Python environment .venv: cutting the photos (strips.py), the solo/tutti OCR,"
+    },
+    {
+     "file": "code/claude/HANDOFF.md",
+     "line": 518,
+     "quote": "v721-723 sont d’autres sessions, entrées par git add -A, non relues ici"
+    },
+    {
+     "file": "code/claude/HANDOFF.md",
+     "line": 195,
+     "quote": "commit ciblé, pas de versions.py car d'autres sessions avaient app.js/score_render.py en cours"
+    },
+    {
+     "file": "code/claude/HANDOFF.md",
+     "line": 408,
+     "quote": "filtre perdu au découpage 1949d7e"
+    },
+    {
+     "file": "code/STATUS.md",
+     "line": 116,
+     "quote": "keep one agent at a time in `app/`"
+    },
+    {
+     "file": "rapports/revue-code-2026-10-01/REVUE.md",
+     "line": 177,
+     "quote": "Any module file over 1 500 lines (app.js 6 800, train.js 3 500) gets split before new features land in it"
+    },
+    {
+     "file": "rapports/revue-code-2026-10-01/REVUE.md",
+     "line": 5,
+     "quote": "L'app est saine : 0 erreur JavaScript au chargement"
+    },
+    {
+     "file": "code/claude/CONTEXTE-COMPLET.md",
+     "line": 216,
+     "quote": "separation (BS-RoFormer, Demucs fallback)"
+    },
+    {
+     "file": "rapports/inventaire-2026-10-08/INVENTAIRE.md",
+     "line": 138,
+     "quote": "`tools/build_check_windows.py --only-shipped` : **67 fichiers lus, 54 avec quelque chose à regarder**"
+    },
+    {
+     "file": "code/CLAUDE.md",
+     "line": 60,
+     "quote": "**Chemins via `pathlib` uniquement.**"
+    },
+    {
+     "file": "code/docs/AUDIT-PORTABLE.md",
+     "line": 17,
+     "quote": "Fix: one `tools/paths.py` with `tool('ffmpeg')` -> bin/<mac|windows>/, then PATH."
+    }
+   ],
+   "what_to_do": [
+    "1. Gel fonctionnel immédiat (aujourd'hui) : aucune nouvelle fonction avant la bêta ; règle écrite dans code/CLAUDE.md et vérifiée par un test « app.js ne peut que rétrécir » (compte de lignes figé à 8 521 dans tools/tests/run_all.py) ; un seul agent à la fois sur app.js, index.html, serve.py et api_library.py (STATUS.md:116), les autres sessions ne touchent que des modules à eux.",
+    "2. Une commande de tests portable : créer tools/tests/run_all.py qui lance tous les .py et .mjs sous node + python et sort 0/1 ; remplacer `print(` par `console.log` dans les 6 .mjs jsc (editor_test, paroles_test, pianiste_page_test, pianiste_test, relire_lecture_test, score_edits_test) ; retirer le chemin jsc de run_score_edits_test.py:21 et run_app_flow_test.py:17 (node -m) ; supprimer `/Users/leomarthaler` dans app_flow_pre.js:2 ; classer groupe_calage_headless.mjs et simplicity_report.py en « manuel Mac » hors suite.",
+    "3. Verrou de dépendances : tools/requirements.txt + uv.lock pour .venv (pipeline, align3, beat_this, basic-pitch, Demucs), en plus des deux requirements de tools/lecture ; un package.json minimal avec `engines.node` et aucune dépendance ; `py_compile` sur tout tools/ et `node --check` sur tout app/ dans run_all.py.",
+    "4. CI GitHub Actions avec runners macos + windows : run_all.py, build_check_windows.py --only-shipped (le compte 54/67 ne doit jamais monter), build_product.py --windows en dry-run, démarrage de serve.py sous Windows et GET /index.html. Le serveur produit étant stdlib-only, c'est un fichier YAML et une journée.",
+    "5. serve.py : envelopper le démarrage (lignes 753-755) dans `main()` + garde `if __name__ == '__main__'` (compatible shell_serve.py:49 runpy) ; mettre `plugin()` (229-245) derrière `PUPITRE_DEV=1`, sinon import unique ; sortir l'état des jobs des dicts de module (api_lire.py:54 running, api_relecture.py:50 jobs, api_mix.py:32 _running) vers les fichiers lire.json / jobs/*.json déjà existants, pour que `busy()` (api_lire.py:651) reste juste après un reload.",
+    "6. Supprimer le code mort et les doublons : la branche rubberband (app.js:497-530, 526 et vendor/rubberband-web), `/api/tools` (serve.py:515-535), l'iframe de migration (index.html:18-36) et migrate.html, `OLD_PANEL` dans reperes.js (54, 452, 1317), les deux copies de peintre-moteur dans maquettes/, et déplacer app/maquettes/ à la racine du projet (hors arbre servi) ; unifier les trois règles « savedAt le plus récent gagne » (app.js:4959, 7916, 8249) dans `files.get`.",
+    "7. Figer l'API : extraire `modApi` (app.js:8275) et `trainApi` (app.js:4424) dans app/api.js avec un typedef JSDoc et `// @ts-check` ; corriger pianiste.js:1449/1456/1531 (écritures `api.state.accomp*`) par une méthode `api.accomp.set(...)` ; test CI qui échoue si un module contient `api.state.X =` ou `api.$('…')` sur un id d'index.html hors de son slot déclaré.",
+    "8. Python : un tools/tool.py (`tool('ffmpeg')` → bin/<os>/ puis PATH, AUDIT-PORTABLE.md:17) utilisé par les 57 fichiers qui appellent ffmpeg ; un tools/jsonio.py (read_json / write_json atomiques, encoding utf-8) remplaçant les 15 définitions locales ; `encoding='utf-8'` sur les 6 `open()` restants de serve.py et les 15 d'api_library.py.",
+    "9. api_library.py : remplacer la chaîne `if sub ==` de `handle()` (2230-2647) par une table `ROUTES = {(méthode, sub): fonction}` ; supprimer `types.SimpleNamespace(**globals())` (2282, 2286) en passant un objet explicite `LibCtx(change_library, find_piece, app_path, …)` à structure_piece.handle et raccourcir_piece.handle.",
+    "10. Après la bêta seulement, un module par PR avec run_all + headless avant/après : sortir le piano-roll du Calage (app.js:4686-6806, drawRoll, rollPointer, scrub) dans app/calage-roll.js, puis découper `wire()` (7091-7894) par zone d'écran ; ajouter esbuild en une commande dans build_product.py (app.js 575 Ko et index.html 218 Ko ne sont pas minifiés).",
+    "11. Documentation : remplacer CONTEXTE-COMPLET.md §5 (216-225, encore BS-RoFormer/madmom/rubberband) par un docs/ARCHITECTURE.md de deux pages généré depuis le code (MODULE_NAMES app.js:8143, routes /api/x/*, formats) ; ramener MODULES.md à la seule référence de l'API ; faire de HANDOFF.md un changelog append-only de ≤ 20 lignes par version, le reste dans rapports/."
+   ],
+   "confidence": "high",
+   "not_read": [
+    "Rien n'a pu être exécuté : ni l'app, ni les tests, ni serve.py (vendor/, .venv, Pupitre-data/, versions/ et .git absents du zip).",
+    "Le corps de app.js hors de l'en-tête (1-120), du chargeur de modules (8080-8521), de la table des sections et des comptages par grep ; les fonctions wire(), drawRoll(), rollPointer() n'ont été mesurées qu'en longueur.",
+    "Le corps de train.js (3 512 lignes), library.js (1 697), reperes.js (1 755), pianiste.js (2 182), editor.js, print.js : seulement en-têtes, imports et grep.",
+    "api_library.py au-delà du dispatch handle() (2230-2420) ; api_lire.py hors 50-60, 130-190, 645-660 ; les autres api_*.py seulement par grep.",
+    "tools/lecture/*.py (19 332 lignes : strips.py, merge.py, deux_lecteurs.py, structure.py), ai_read.py, pipeline.py, align3.py, anchors.py : non lus, hors du périmètre de la question 7.",
+    "Les 53 fichiers CSS (seulement comptés), le code des maquettes (seulement diffé contre les modules), build/mac/Pupitre.swift (grep seulement), les 35 images.",
+    "code/claude/HANDOFF.md (410 Ko) : seulement interrogé par grep et sa dernière ligne ; CONTEXTE-COMPLET.md : seulement §5 et §13.",
+    "Rapports non ouverts ou seulement par en-têtes : regard-neuf 2026-09-29 (sauf RETOUR.md et la demande du lecteur 3), regard-neuf-2026-10-01/AVIS.md (en-têtes), audit-2026-10-06/AUDIT.md (en-têtes), calage-*, omr-*, verdi-*, licences-*, mini-ia-*.",
+    "Pour aller plus loin il faudrait : le dépôt git (fréquence réelle des régressions par fichier, blame d'app.js), un run de run_all sur une machine Linux et une machine Windows, et le dossier versions/ pour mesurer la croissance d'app.js jour par jour."
+   ]
+  }
+ ]
+}
