@@ -1,5 +1,7 @@
 # PROMPT — à coller dans la session Claude Code de Pupitre
 
+> **Important :** lis aussi `PROMPT-2-PLUGINS-TESTS-IMAGES.md`, qui le complète et le corrige (plugins, pochettes IA, vrais tests, optimisation). En cas de contradiction, le PROMPT 2 gagne.
+
 > Léo : colle tout ce qui suit dans une nouvelle session Claude Code ouverte dans le dossier du projet Pupitre,
 > et dépose à côté le dossier `pupitre-review/` (rapport, constats, outils). Rien d'autre.
 
@@ -63,7 +65,7 @@ Ne crois aucun chiffre ancien du projet (« 29/29 », « 548/548 », « 0 erreur
 - **La bêta du 26 octobre est « le Lecteur »** : ouvrir un `.pupitre` préparé par Léo, choisir sa voix, suivre, boucler, ralentir, entendre sa ligne au piano, mixer les voix, transposer, corriger un décalage grossier par phrases. Mac Apple Silicon seulement.
 - **Hors de la bêta** (sortis du paquet, pas seulement cachés) : lecture photo/PDF, « Relire par une IA », « Partir de l'enregistrement », « Une portée par voix », « Raccourcir la partition », pochettes peintes et petite IA, Pianiste (sauf « Partition »), Chanter/Entraînement (sauf « une prise »), vidéo, impression, export mix, mode chef, maquettes.
 - **Opéra et solistes** : hors périmètre de la bêta. Le Verdi reste un cas de test interne.
-- **Supra2-IMG** : abandonné. Pas de modèle génératif d'images.
+- **Pochettes IA** : décision de Léo du 8 oct au soir : on les garde, en plugin téléchargeable, voir `PROMPT-2-PLUGINS-TESTS-IMAGES.md` section C.
 
 À confirmer avec Léo une seule fois, en une question fermée au début de ta session : « La bêta du 26 = tes pièces préparées pour Éolides, sur Mac, sans lecture de photo. Oui ? » S'il dit non, arrête-toi et demande-lui ce qu'il veut à la place, en lui montrant la section 2 de `DEFI-ET-MEILLEURS-OUTILS.md`.
 
@@ -190,7 +192,7 @@ Objectif : un seul objet `quality` écrit par `pipeline.check`, lu partout, et t
 
 **Garder :** synctoolbox (licence à confirmer), Verovio (LGPL, fichier séparé ; utiliser sa timemap au lieu de recalculer), Signalsmith Stretch, beat_this, FCPE, basic-pitch, smplr, échantillons CC0.
 
-**Retirer ou ne pas utiliser :** Demucs par défaut (licence des poids), CREPE (remplacé par pyin/FCPE), rubberband-web, madmom, pedalboard, MMS, ROSVOT, BS-RoFormer, homr importé, oemer, SMT, Whisper/WhisperX pour les paroles chantées, Supra2-IMG et tout modèle d'images.
+**Retirer ou ne pas utiliser :** Demucs par défaut (licence des poids), CREPE (remplacé par pyin/FCPE), rubberband-web, madmom, pedalboard, MMS, ROSVOT, BS-RoFormer, homr importé, oemer, SMT, Whisper/WhisperX pour les paroles chantées. (Les modèles d'images : voir PROMPT 2, section C.)
 
 **Commerciaux à évaluer (Léo décide, tu prépares) :**
 - ReadScoreLib (moteur de PlayScore 2) : seule lecture de partitions embarquable légalement et hors ligne. Préparer un courriel de demande de prix et de licence SDK, et un protocole de test (Verdi 3 pages, Cantique, 30 mesures vérifiées).
@@ -201,7 +203,7 @@ Objectif : un seul objet `quality` écrit par `pipeline.check`, lu partout, et t
 
 ## 7. Ce qu'il faut arrêter (et refuser poliment si Léo le redemande avant le 26)
 
-Nouvelles maquettes · pochettes, pinceau, petite IA · nouvelles règles de lecture OMR · « Caler avec des mots » · « Recaler ce passage » tant que `quality` n'existe pas · Pianiste, Chanter, vidéo, impression, export · agents marketing · sessions parallèles sur les fichiers produit · versions sans jalon · commentaires datés · chiffres sans fichier source · « 0 erreur JS » comme preuve · résumés plus doux que les rapports · promettre Windows, « 100 % hors ligne » ou « clé USB ».
+Nouvelles maquettes · nouvelles retouches de pochettes avant l'étape prévue au PROMPT 2 · nouvelles règles de lecture OMR · « Caler avec des mots » · « Recaler ce passage » tant que `quality` n'existe pas · Pianiste, Chanter, vidéo, impression, export · agents marketing · sessions parallèles sur les fichiers produit · versions sans jalon · commentaires datés · chiffres sans fichier source · « 0 erreur JS » comme preuve · résumés plus doux que les rapports · promettre Windows, « 100 % hors ligne » ou « clé USB ».
 
 Formule pour Léo : « C'est noté pour après la bêta. Aujourd'hui je fais <étape>, pour que l'app arrête de te dire des choses fausses. »
 
