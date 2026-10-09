@@ -1,10 +1,15 @@
 # Licences des outils proposés, et l'idée « plugin à télécharger soi-même »
 
-De mémoire, sans vérification web : à revérifier sur le dépôt officiel de chaque projet avant de livrer (fichier LICENSE + carte du modèle pour les poids).
+De mémoire au départ, **corrigé le 8 oct au soir après vérification web** (voir `DEFI-ET-MEILLEURS-OUTILS.md`). Toujours relire le fichier LICENSE officiel avant de livrer.
 
 ## Feu vert : peut être dans l'app vendue
-- Silero VAD (MIT), wavesurfer.js (BSD-3), synctoolbox (MIT), Signalsmith Stretch (MIT), FCPE (MIT), basic-pitch (Apache-2.0), Demucs (MIT, code et poids htdemucs), smplr (MIT), onnxruntime (MIT), librosa / pYIN (ISC), pywebview (BSD-3), Tauri (MIT/Apache), Sparkle et WinSparkle (MIT).
-- beat_this : code MIT ; vérifier que la licence des poids (checkpoints) est bien la même.
+- Signalsmith Stretch (MIT), FCPE (MIT), basic-pitch (Apache-2.0), beat_this (code et poids MIT selon plusieurs sources), smplr (MIT), onnxruntime (MIT), librosa / pYIN (ISC), partitura (Apache-2.0), pywebview (BSD-3), Tauri (MIT/Apache), Sparkle et WinSparkle (MIT).
+
+## À vérifier avant de livrer (corrigé)
+- **Demucs** : code MIT, mais **poids htdemucs contestés** (« recherche », possiblement CC BY-NC). Pas dans le paquet tant que ce n'est pas tranché.
+- **synctoolbox** (cœur du calage) : licence listée « other ». Lire le fichier LICENSE : bloquant si non commercial.
+- **Silero VAD** : MIT selon plusieurs sources, mais un badge CC BY-NC sur le README.
+- **wavesurfer.js** : probablement BSD-3, mais la page « about » parle de CC BY 3.0.
 
 ## Feu orange : possible, avec des conditions
 - Verovio, peaks.js, lamejs (LGPL-3) : fichiers séparés, non fusionnés dans un bundle, remplaçables, texte de licence livré, mention dans « À propos ».
@@ -16,7 +21,7 @@ De mémoire, sans vérification web : à revérifier sur le dépôt officiel de 
 
 ## À vérifier avant usage, même interne
 - Jeux de données de chercheurs : Dagstuhl ChoirSet (probablement CC BY), Choral Singing Dataset et Schubert Winterreise Dataset (licences à vérifier, certaines peut-être « non commercial »). Un « non commercial » peut interdire même un usage de test interne par une entreprise qui vend. Lire la licence de chacun ; garder seulement ceux qui l'autorisent.
-- Partitions : OpenScore Lieder (CC0) = OK, même dans l'app. Corpus music21 : licences mélangées fichier par fichier. CPDL : la licence CPDL autorise la copie libre mais pas la revente ; donc lien vers le site, pas de partitions CPDL dans le paquet.
+- Partitions : OpenScore Lieder (CC0) = OK, même dans l'app. Corpus music21 : licences mélangées fichier par fichier. CPDL : licence par partition ; la licence CPDL par défaut autorise la distribution, même payante, en gardant l'attribution. Vérifier pièce par pièce ; en cas de doute, un lien plutôt qu'un fichier.
 
 ## L'idée « plugin à télécharger soi-même »
 
@@ -31,10 +36,10 @@ Audiveris, homr, MuseScore. La ligne est tenue si les quatre conditions sont vra
 ### Mauvaise idée pour les modèles « non commercial »
 madmom, MMS, ROSVOT, poids sans licence. Le problème n'est pas la distribution, c'est l'usage : une fonction d'un produit payant qui repose sur eux est un usage commercial, même si le client les télécharge lui-même. Le « plugin » serait une feuille de vigne. Ne pas les utiliser du tout.
 
-### Mauvaise idée pour les modèles d'images à l'origine floue (Supra2-IMG)
-Même raisonnement : le téléchargement par le client ne change rien si la fonction est vendue. Et la fonction ne sert pas le métier de Pupitre.
+### Modèles d'images (décision de Léo : on garde les pochettes IA)
+Le téléchargement par le client ne règle pas une licence « non commercial ». Donc : uniquement un modèle dont la carte autorise explicitement l'usage commercial, choisi par test à l'aveugle (prompt unique, section 10), en plugin, avec la mention « image générée ».
 
 ### Bonne idée pour la taille, quelle que soit la licence (si permissive)
-Demucs, le moteur de calage complet (~1 Go) : téléchargement optionnel au premier besoin, depuis ton propre serveur, pour garder l'installeur petit. Là, ce n'est pas une question de licence (MIT autorise), c'est une question de poids.
+Le moteur de calage complet (~1 Go) : téléchargement optionnel au premier besoin, depuis ton propre serveur, pour garder l'installeur petit. Seulement avec des briques dont la licence est confirmée permissive (Demucs exclu tant que ses poids ne sont pas tranchés).
 
 Une heure avec un avocat spécialisé en logiciel avant la vente reste nécessaire, surtout pour Audiveris / homr.
