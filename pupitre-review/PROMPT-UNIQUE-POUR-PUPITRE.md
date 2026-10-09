@@ -1,6 +1,4 @@
-# PROMPT — à coller dans la session Claude Code de Pupitre
-
-> **Important :** lis aussi `PROMPT-2-PLUGINS-TESTS-IMAGES.md`, qui le complète et le corrige (plugins, pochettes IA, vrais tests, optimisation). En cas de contradiction, le PROMPT 2 gagne.
+# PROMPT UNIQUE — à coller dans la session Claude Code de Pupitre
 
 > Léo : colle tout ce qui suit dans une nouvelle session Claude Code ouverte dans le dossier du projet Pupitre,
 > et dépose à côté le dossier `pupitre-review/` (rapport, constats, outils). Rien d'autre.
@@ -62,10 +60,13 @@ Ne crois aucun chiffre ancien du projet (« 29/29 », « 548/548 », « 0 erreur
 
 ## 4. Décisions déjà prises (ne pas rediscuter, sauf si Léo dit le contraire)
 
+- **Pupitre se vend une seule fois (pas d'abonnement).** Il doit être *ultra beau*, simple à caler, et meilleur que les autres apps (section 13).
+- **Plugins à télécharger : oui.** Léo préfère 2 ou 3 plugins excellents que l'utilisateur télécharge, plutôt que des outils gratuits médiocres embarqués (section 9).
+- **Pochettes IA avec touches impressionnistes : oui**, en plugin, avec notre pinceau maison (section 10).
+- **Versions et sauvegardes : sacrées** (section 15).
 - **La bêta du 26 octobre est « le Lecteur »** : ouvrir un `.pupitre` préparé par Léo, choisir sa voix, suivre, boucler, ralentir, entendre sa ligne au piano, mixer les voix, transposer, corriger un décalage grossier par phrases. Mac Apple Silicon seulement.
-- **Hors de la bêta** (sortis du paquet, pas seulement cachés) : lecture photo/PDF, « Relire par une IA », « Partir de l'enregistrement », « Une portée par voix », « Raccourcir la partition », pochettes peintes et petite IA, Pianiste (sauf « Partition »), Chanter/Entraînement (sauf « une prise »), vidéo, impression, export mix, mode chef, maquettes.
+- **Hors de la bêta** (sortis du paquet, pas seulement cachés) : lecture photo/PDF, « Relire par une IA », « Partir de l'enregistrement », « Une portée par voix », « Raccourcir la partition », pochettes IA (elles reviennent en plugin après les étapes prioritaires, section 10), Pianiste (sauf « Partition »), Chanter/Entraînement (sauf « une prise »), vidéo, impression, export mix, mode chef, maquettes.
 - **Opéra et solistes** : hors périmètre de la bêta. Le Verdi reste un cas de test interne.
-- **Pochettes IA** : décision de Léo du 8 oct au soir : on les garde, en plugin téléchargeable, voir `PROMPT-2-PLUGINS-TESTS-IMAGES.md` section C.
 
 À confirmer avec Léo une seule fois, en une question fermée au début de ta session : « La bêta du 26 = tes pièces préparées pour Éolides, sur Mac, sans lecture de photo. Oui ? » S'il dit non, arrête-toi et demande-lui ce qu'il veut à la place, en lui montrant la section 2 de `DEFI-ET-MEILLEURS-OUTILS.md`.
 
@@ -192,7 +193,7 @@ Objectif : un seul objet `quality` écrit par `pipeline.check`, lu partout, et t
 
 **Garder :** synctoolbox (licence à confirmer), Verovio (LGPL, fichier séparé ; utiliser sa timemap au lieu de recalculer), Signalsmith Stretch, beat_this, FCPE, basic-pitch, smplr, échantillons CC0.
 
-**Retirer ou ne pas utiliser :** Demucs par défaut (licence des poids), CREPE (remplacé par pyin/FCPE), rubberband-web, madmom, pedalboard, MMS, ROSVOT, BS-RoFormer, homr importé, oemer, SMT, Whisper/WhisperX pour les paroles chantées. (Les modèles d'images : voir PROMPT 2, section C.)
+**Retirer ou ne pas utiliser :** Demucs par défaut (licence des poids), CREPE (remplacé par pyin/FCPE), rubberband-web, madmom, pedalboard, MMS, ROSVOT, BS-RoFormer, homr importé, oemer, SMT, Whisper/WhisperX pour les paroles chantées. (Les modèles d'images : voir section 10.)
 
 **Commerciaux à évaluer (Léo décide, tu prépares) :**
 - ReadScoreLib (moteur de PlayScore 2) : seule lecture de partitions embarquable légalement et hors ligne. Préparer un courriel de demande de prix et de licence SDK, et un protocole de test (Verdi 3 pages, Cantique, 30 mesures vérifiées).
@@ -203,7 +204,7 @@ Objectif : un seul objet `quality` écrit par `pipeline.check`, lu partout, et t
 
 ## 7. Ce qu'il faut arrêter (et refuser poliment si Léo le redemande avant le 26)
 
-Nouvelles maquettes · nouvelles retouches de pochettes avant l'étape prévue au PROMPT 2 · nouvelles règles de lecture OMR · « Caler avec des mots » · « Recaler ce passage » tant que `quality` n'existe pas · Pianiste, Chanter, vidéo, impression, export · agents marketing · sessions parallèles sur les fichiers produit · versions sans jalon · commentaires datés · chiffres sans fichier source · « 0 erreur JS » comme preuve · résumés plus doux que les rapports · promettre Windows, « 100 % hors ligne » ou « clé USB ».
+Nouvelles maquettes · nouvelles retouches de pochettes avant l'étape prévue (section 16) · nouvelles règles de lecture OMR · « Caler avec des mots » · « Recaler ce passage » tant que `quality` n'existe pas · Pianiste, Chanter, vidéo, impression, export · agents marketing · sessions parallèles sur les fichiers produit · versions sans jalon · commentaires datés · chiffres sans fichier source · « 0 erreur JS » comme preuve · résumés plus doux que les rapports · promettre Windows, « 100 % hors ligne » ou « clé USB ».
 
 Formule pour Léo : « C'est noté pour après la bêta. Aujourd'hui je fais <étape>, pour que l'app arrête de te dire des choses fausses. »
 
@@ -220,7 +221,160 @@ Formule pour Léo : « C'est noté pour après la bêta. Aujourd'hui je fais <é
 
 ---
 
-## 9. Format de ton rapport de fin de session
+---
+
+## 9. Le système de plugins (à construire après les étapes 1 à 4 de la section 5)
+
+### 9.1 Pourquoi
+Le paquet de base reste petit, beau, sûr et 100 % vendable. Les gros moteurs (calage automatique, lecture de partition, images IA) vivent à côté, se téléchargent au besoin, et peuvent être remplacés par un meilleur sans toucher à l'app. C'est aussi ce qui règle la question AGPL pour Audiveris et homr (voir `LICENCES-ET-PLUGINS.md`).
+
+### 9.2 Les plugins proposés (3 au départ, pas plus)
+| Plugin | Ce qu'il apporte | Source | Licence / règle |
+|---|---|---|---|
+| **Calage automatique** | Le calcul complet (beat_this, FCPE, basic-pitch, synctoolbox, Demucs seulement si licence confirmée), ≈ 1 Go | ton propre serveur | Uniquement des briques vérifiées permissives (fichier `docs/LICENCES.md`). Pupitre marche sans : calage par phrases à la main. |
+| **Lecture de partition** | Photo/PDF → brouillon MusicXML | Audiveris depuis **son site officiel** (installé par l'utilisateur), ou ReadScoreLib si Léo achète une licence (alors intégré, pas plugin) | AGPL : lancé par ligne de commande, jamais importé, jamais modifié, jamais redistribué par nous. Toujours « brouillon à vérifier ». |
+| **Pochettes IA** | Images générées puis repeintes par notre pinceau | modèle téléchargé (section 10) | Licence commerciale vérifiée du modèle ; marquage « image générée ». |
+| *(optionnel, sans téléchargement par nous)* **MuseScore** | Corriger une partition dans un vrai éditeur | site officiel | GPL, programme séparé, Pupitre ne fait qu'ouvrir un fichier. |
+
+### 9.3 Comment le construire
+- Dossier `Pupitre-data/plugins/<nom>/` avec un `plugin.json` : `{name, version, sha256 de chaque fichier, taille, licence, url_source, url_licence, entrée (commande ou module), compatible_app: ">=1.0"}`.
+- Un seul module serveur `tools/plugins.py` : `list()`, `status(name)` (absent / téléchargement / prêt / cassé), `install(name)` (télécharge, vérifie le sha256, décompresse dans un dossier temporaire puis renomme : jamais de plugin à moitié installé), `remove(name)` (vers la Corbeille), `run(name, args)` (sous-processus, délai maximum, journal).
+- Un seul écran « Plugins » dans Réglages : nom, une phrase de ce qu'il apporte, taille, licence (lien), bouton Installer / Retirer, état. Pas d'autre endroit.
+- Quand une fonction a besoin d'un plugin absent : une phrase calme + un bouton (« Le calage automatique demande un module de 1 Go. Installer » / « Caler à la main »). Jamais une erreur technique.
+- L'app ne télécharge **jamais** un logiciel AGPL/GPL elle-même : elle ouvre le site officiel, puis détecte le programme installé.
+- Tests : `tools/tests/unit/plugins_test.py` avec un faux plugin de 1 Ko : installation, mauvais sha256 refusé, coupure au milieu (rien de cassé), retrait, app qui démarre sans aucun plugin.
+
+### 9.4 Idée commerciale à présenter à Léo (pas à construire)
+Avec une vente unique, les mises à jour et le support ne rapportent rien. Option à proposer : l'app de base en achat unique, et un plugin premium payant une fois (par exemple la lecture de partition si ReadScoreLib est licencié). Léo décide.
+
+---
+
+## 10. Les pochettes IA, proprement
+
+### 10.1 Ce qui reste notre force
+Le pinceau maison (`app/peintre-moteur.js`, notre code + toiles CC0) est ce qui rend les pochettes belles et uniques. Le modèle IA ne fournit qu'une **ébauche** que le pinceau repeint. Donc le modèle doit être **remplaçable** : Pupitre ne dépend pas d'un modèle précis.
+
+### 10.2 Choisir le modèle (protocole, pas de choix au feeling)
+1. **Candidats** (licences à **lire sur la carte du modèle** avant tout test ; ce qui suit est de mémoire, non vérifié) :
+   - Supra2-IMG (l'actuel, Apache-2.0, 116 Mo, entraîné sur des images FLUX : vérifier quelle variante de FLUX et ses conditions) ;
+   - FLUX.1-schnell (Apache-2.0, très bon mais lourd, plusieurs Go même compressé) ;
+   - Stable Diffusion 1.5 / ses versions distillées rapides (licence OpenRAIL-M : commercial autorisé avec restrictions d'usage) ;
+   - Stable Diffusion 3.5 Medium (licence communautaire Stability : gratuite en commercial sous un seuil de chiffre d'affaires) ;
+   - tout autre modèle dont la carte dit explicitement « usage commercial autorisé ».
+   **Exclus d'office** : licence « non commercial », licence absente, FLUX.1-dev comme modèle livré.
+2. **Critères mesurés** pour chaque candidat, sur le Mac de Léo et sur un Mac Intel ou un PC ordinaire : taille du téléchargement, mémoire, temps pour 4 images 256 px, et **beauté après le pinceau**.
+3. **Beauté = test à l'aveugle** : 12 titres de pièces réels, 4 images par modèle, toutes repeintes par le même pinceau, mélangées, numérotées ; Léo (et une deuxième personne) note chaque image 1 à 5 sans savoir quel modèle l'a faite. Le gagnant est celui qui a la meilleure note **par Mo téléchargé** à beauté égale.
+4. Écrire le résultat dans `rapports/pochettes-modeles-<date>.md` : tableau, images, notes, licence avec lien et date de lecture.
+
+### 10.3 Règles du plugin « Pochettes IA »
+- Téléchargé à la demande, jamais dans le paquet de base ; sans lui, le pinceau seul fait des pochettes (c'est déjà le cas).
+- Marquage : métadonnées de l'image **et** mention visible discrète « image générée » dans le panneau de la pochette (exigence de transparence européenne pour les contenus générés) ; le choix « sans IA » reste à un clic.
+- Interrupteur pour désactiver (déjà présent) ; rien n'est envoyé sur internet.
+- Prompts fabriqués par Pupitre à partir du titre (dictionnaire maison) ; pas de noms d'artistes vivants ni de styles d'artistes vivants dans les prompts.
+- La réserve de 16 images IA livrée en secours : vérifier quel modèle l'a produite ; si sa licence n'est pas claire, la régénérer avec le modèle choisi.
+
+---
+
+## 11. Apprendre vraiment de ses essais (le point le plus important de ce prompt)
+
+Le projet a produit énormément de rendus, de bancs et de pages de comparaison, et en a peu appris. Raisons : pas de question écrite avant, pas de point de comparaison fixe, plusieurs choses changées à la fois, des chiffres sans taille d'échantillon, des règles écrites après avoir vu les résultats, et personne qui écoute les échecs. Désormais, **chaque essai suit ce carnet**, dans `rapports/essais/<date>-<nom>.md`, rempli **avant** de lancer :
+
+```
+# Essai : <nom>
+Question (une seule) : …
+Pourquoi c'est important pour un client : …
+Ce que je change (UNE variable) : …
+Point de comparaison (la version actuelle, figée, avec son numéro de version) : …
+Données : ensemble de RÉGLAGE = … ; ensemble de CONTRÔLE (jamais regardé avant la fin) = …
+Mesure (script + fonction) : …   Taille de l'échantillon (n) : …
+Ma prédiction (chiffre) : …
+Règle de décision écrite AVANT : « je garde si … ; je jette si … ; sinon je ne conclus pas »
+--- après ---
+Résultat réglage : …   Résultat contrôle : …
+Les 5 pires cas, regardés ET écoutés un par un, rangés par cause : …
+Décision (selon la règle, pas selon l'envie) : …
+Ce que j'ai appris que je ne savais pas avant : …
+```
+
+Règles :
+- **Une variable à la fois.** Si tu changes deux choses, tu n'apprends rien sur aucune.
+- **L'ensemble de contrôle est regardé une fois**, à la fin. Chaque regard est noté (le banc le fait déjà : garder).
+- **Pas de conclusion sous n = 30 cas** pour une proportion ; dis « pas assez de données ».
+- **Les pires cas sont la vraie récolte** : les classer par cause (rentrée de chœur, point d'orgue, dérive, fin, partition plus longue…) apprend plus que le pourcentage moyen.
+- **Écouter.** Pour le calage, chaque essai se termine par l'écoute de 3 passages par un humain (Léo ou toi via un extrait envoyé à Léo dans la Loupe).
+- **Un rendu sans question n'est pas un essai.** Ne plus produire de pages de comparaison « pour voir ».
+- **Garder les échecs** : un essai négatif bien écrit vaut autant qu'un positif ; il évite de le refaire.
+
+---
+
+## 12. Les jeux de données : comment s'en servir concrètement
+
+### 12.1 Vérités externes pour le calage
+1. **Schubert Winterreise Dataset** (CC BY 3.0 confirmé, Zenodo 3968389) : voix soliste + piano, plusieurs interprétations, partitions, et annotations de temps. Pour Pupitre : le cas « soliste / rubato » qui a cassé le Verdi.
+   - Écrire `tools/bench/datasets/winterreise.py` : télécharge, convertit la partition en `data.json` Pupitre (via `build_piece.py`) et les annotations en liste `(q, t)` de vérité.
+   - Lancer le pipeline sans aucun réglage spécial, mesurer avec **mir_eval** (écart des débuts de notes / de mesures), par interprétation, avec n.
+   - Classer les pires passages par cause. C'est la base de l'état « refus » (section 5, étape 4).
+2. **Dagstuhl ChoirSet** et **Choral Singing Dataset** (licences à lire sur leurs pages Zenodo avant de télécharger) : chœur multipiste. Pour Pupitre : vérifier que le calage marche quand **plusieurs** voix chantent, ce que la vérité actuelle (une seule voix de Léo) ne couvre pas.
+3. Un **seul tableau** pour tout : `rapports/calage-externe-<date>.md` (pièce, n notes, % à 50/100/200 ms, pires causes). Ce tableau devient le chiffre officiel du calage. Les anciens chiffres sont retirés.
+
+### 12.2 Vos propres jeux de test, qui servent à quelque chose
+- **Jeu d'or humain** (`tools/tests/fixtures/or/`) : 10 pièces maximum, choisies pour **varier** (chœur a cappella, chœur + orgue, chœur + orchestre, soliste + piano, pièce avec reprises, enregistrement live, piste d'exercice). Pour chacune : 20 à 40 phrases posées par Léo à l'oreille (avec l'outil phrases), et c'est tout. Pas besoin de toutes les notes.
+- **Cas pièges synthétiques** (le meilleur outil du projet, `calage_warp.py`, à généraliser) : prendre un enregistrement juste et le déformer de façon **connue** : couper la fin (partition plus longue), ajouter une intro, un point d'orgue de 4 s, ralentir de 20 %, répéter un couplet, transposer. On connaît la bonne réponse sans aucune vérité humaine. Chaque cas doit soit être calé juste, soit **refusé avec la bonne phrase**. Un cas qui passe faux sans refus = bug grave.
+- **Jeu de non-régression** : les 12 pièces de Léo restent, mais seulement pour vérifier qu'on ne recule pas (plancher gelé), plus pour décider.
+- **Lecture de partition** : 30 mesures du Verdi vérifiées par Léo + 2 pages de chœur, notes ET syllabes ; et un sous-ensemble du **Sheet Music Benchmark** (mesure OMR-NED) si on compare des lecteurs.
+
+### 12.3 Ce qu'il ne faut plus faire avec les données
+- Écrire une référence soi-même en regardant la sortie de la machine.
+- Mesurer seulement les notes que la machine a déjà bien placées.
+- Mélanger ensemble de réglage et de contrôle.
+- Livrer dans l'app un fichier venant d'un jeu de données de recherche.
+
+---
+
+## 13. « Ultra beau » et « simple à caler » : comment le rendre vérifiable
+
+- **Un système de design** dans `app/tokens.css` : couleurs (clair et nuit), une échelle typographique (5 tailles maximum), espacements (multiples de 4 px), rayons, ombres, durées d'animation. Tout le CSS doit utiliser ces variables. Un test compte les couleurs et tailles écrites en dur : le nombre ne peut que baisser.
+- **Références** : avant de redessiner un écran, Léo choisit 3 apps qu'il trouve belles ; tu en tires 5 règles écrites, appliquées, et vérifiées sur capture.
+- **Captures de référence** (Playwright) en clair et en nuit, à 1440 et 760 px : aucune régression visuelle non voulue.
+- **Simple à caler = chronométré** : temps pour caler une pièce de 4 minutes par phrases, par Léo puis par un choriste. Objectif < 10 min. Chaque changement de l'écran de calage doit faire baisser ce temps ou le nombre d'erreurs.
+- **Compteur de simplicité** (`tools/simplicity_report.py`) : commandes visibles, mots à l'écran ; plafonds écrits dans `docs/BETA-26-OCT.md`.
+
+---
+
+## 14. Optimisation (mesurer avant d'optimiser)
+
+1. **Un script de mesure** `tools/bench/machine.py` : une pièce de 4 minutes, du dépôt au premier son, temps par étape, mémoire maximale ; lancé sur le Mac de Léo **et** sur une machine ordinaire. Résultats dans `rapports/perf-<date>.md`.
+2. **Objectifs** à afficher dans le rapport : ouverture de l'app < 2 s ; ouverture d'une pièce < 1 s ; premier son < 300 ms après lecture ; calage automatique d'une pièce de 4 min < 3 min sur un Mac ordinaire ; mémoire < 1,5 Go.
+3. **Outils** : panneau Performance de Chrome (front), **py-spy** (profileur Python, sans modifier le code) pour le pipeline.
+4. **Pistes, dans l'ordre du gain probable** : ne pas lancer Demucs par défaut ; un seul détecteur de hauteur (FCPE ou pyin, pas CREPE en plus) ; Verovio rendu par page et non toute la pièce ; pianos « compact » par défaut, échantillons chargés à la demande ; cache des analyses par empreinte de fichier (déjà là : garder) ; plus tard, ONNX à la place de PyTorch.
+5. Chaque optimisation = un essai du carnet (section 11), avec avant/après sur le même script.
+
+---
+
+## 15. Versions et sauvegardes (rappel, non négociable)
+
+- `python3 tools/versions.py save "avant <étape>"` et `save "<étape> faite"` à chaque étape, plus un `git tag etape-<n>`.
+- Avant toute modification de données de Léo (corrections, partitions, bibliothèque) : copie dans `history/`, jamais d'effacement.
+- La sauvegarde complète hors de l'app (section 5, étape 7) passe **avant** le système de plugins.
+- Si un essai abîme quelque chose : `versions.py restore`, puis noter dans le carnet ce qui s'est passé.
+
+---
+
+## 16. Ordre global, mis à jour
+
+1. Section 5, étapes 0 à 4 (vérité à l'écran, réduction, tests, calage honnête).
+2. Section 12.2 « cas pièges synthétiques » et 12.1 Winterreise : les vérités externes, avant de toucher davantage au calage.
+3. Section 5, étapes 5 (phrases) et 7 (sauvegarde).
+4. Section 9 : système de plugins, avec le plugin « Calage automatique » d'abord.
+5. Section 10 : choix du modèle de pochettes par test à l'aveugle, puis plugin « Pochettes IA ».
+6. Section 13 : système de design et captures ; section 14 : mesure de performance.
+7. Section 5, étapes 8 à 10 (licences, paquet signé, test humain).
+
+À chaque étape : carnet d'essai si c'est une expérience, version avant/après, rapport honnête à Léo (ce qui ne marche pas d'abord).
+
+---
+
+## 17. Format de ton rapport de fin de session
 
 - Ce qui ne marche toujours pas (en premier).
 - Ce qui a été fait, étape par étape, avec la preuve : capture, sortie de test, écoute de Léo datée.
@@ -230,3 +384,4 @@ Formule pour Léo : « C'est noté pour après la bêta. Aujourd'hui je fais <é
 - Mise à jour de `HANDOFF.md` en ≤ 20 lignes.
 
 Commence maintenant par la section 0, puis la question de la section 4.
+

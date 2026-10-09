@@ -2,6 +2,7 @@
 
 Ce dossier est le résultat d'une revue externe du zip `Pupitre-pour-une-IA.zip`, faite par un modèle qui n'a pas construit l'app.
 
+- `PROMPT-UNIQUE-POUR-PUPITRE.md` : LE prompt à coller dans la session de Pupitre (tout dedans).
 - `REVUE-PUPITRE-2026-10-08.md` : le rapport complet en français, structuré selon `00-LIS-MOI-D-ABORD.md`
   (11 domaines, affirmations attaquées, 12 questions, top 15, liste d'arrêt, plan d'une semaine, paragraphe pour Léo).
   Chaque constat porte un chemin et un numéro de ligne, et une étiquette [verified] / [inferred] / [guess].
